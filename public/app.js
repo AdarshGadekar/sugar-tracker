@@ -222,7 +222,8 @@ function showView() {
   const signedIn = !!state.user;
   $("auth-view").hidden = signedIn;
   $("app-view").hidden = !signedIn;
-  $("signout").hidden = !signedIn;
+  $("account").hidden = !signedIn;
+  if (signedIn) $("avatar").textContent = displayName(state.user).charAt(0).toUpperCase();
   if (signedIn) {
     pending = null;
     stopPolling();

@@ -9,11 +9,16 @@
 </head>
 <body>
   <div class="ambient" aria-hidden="true"><span></span><span></span><span></span></div>
-  <main class="wrap">
-    <header class="top">
+  <header class="top">
+    <div class="top-inner">
       <h1 class="brand">Sugar Tracker</h1>
-      <button id="signout" class="link" hidden>Sign out</button>
-    </header>
+      <div class="account" id="account" hidden>
+        <span class="avatar" id="avatar" aria-hidden="true"></span>
+        <button id="signout" class="secondary small" type="button">Sign out</button>
+      </div>
+    </div>
+  </header>
+  <main class="wrap">
 
     <!-- Auth: one of four screens is visible at a time -->
     <section id="auth-view" hidden>
@@ -115,7 +120,7 @@
         <button value="no" class="good">No sugar</button>
         <button value="yes" class="bad">Had sugar</button>
       </div>
-      <button value="cancel" class="link">Cancel</button>
+      <button value="cancel" class="secondary full">Cancel</button>
     </form>
   </dialog>
 
@@ -126,8 +131,8 @@
       <p id="confirm-text"></p>
       <p id="confirm-warn" class="warn"></p>
       <div class="row">
-        <button value="confirm" id="confirm-btn">Yes, save it</button>
         <button value="cancel" class="secondary">Go back</button>
+        <button value="confirm" id="confirm-btn">Yes, save it</button>
       </div>
     </form>
   </dialog>
