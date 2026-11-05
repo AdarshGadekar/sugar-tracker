@@ -69,6 +69,13 @@ async function busy(button, label, fn) {
   try { return await fn(); } finally { button.disabled = false; button.textContent = old; }
 }
 
+function friendly(error) {
+  if (error?.code === "over_email_send_rate_limit" || /rate limit/i.test(error?.message || "")) {
+    return "Too many sign-up emails were sent in the last hour. Please try again in a little while.";
+  }
+  return error?.message || "Something went wrong. Please try again.";
+}
+
 const isUnconfirmed = (error) =>
   error?.code === "email_not_confirmed" || /not confirmed/i.test(error?.message || "");
 
@@ -92,7 +99,7 @@ async function signUp(e) {
       email, password,
       options: { emailRedirectTo: redirectTo, data: { name: form.name.value.trim() } },
     }));
-  if (error) return setMsg(form, error.message);
+  if (error) return setMsg(form, friendly(error));
   if (data.session) return; // email confirmation is off: already signed in
   if (data.user && data.user.identities?.length === 0) {
     return setMsg(form, "An account with this email already exists. Sign in instead.");
@@ -132,7 +139,7 @@ async function resend(e) {
   const box = document.querySelector('[data-screen="verify"]');
   const { error } = await busy(e.currentTarget, "Sending…", () =>
     supabase.auth.resend({ type: "signup", email: pending.email, options: { emailRedirectTo: redirectTo } }));
-  setMsg(box, error ? error.message : "Sent again. Check spam too.", !!error);
+  setMsg(box, error ? friendly(error) : "Sent again. Check spam too.", !!error);
 }
 
 // Coming back to this tab after clicking the link elsewhere: check right away.
