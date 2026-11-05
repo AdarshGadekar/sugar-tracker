@@ -131,7 +131,7 @@ export function createMockClient() {
     const mine = (db.marks[uid] ||= {});
     let count = Object.values(mine).filter(Boolean).length;
     if (count > MAX_SUGAR) return { data: null, error: err("P0001", `Your tracker is locked: you used all ${MAX_SUGAR} chances.`) };
-    if (p_day > daysAgo(-1)) return { data: null, error: err("P0001", "You cannot mark a future day.") };
+    if (p_day >= iso(new Date())) return { data: null, error: err("P0001", "You can only mark a day once it's over.") };
     if (p_day in mine) return { data: null, error: err("P0001", "That day is already marked.") };
     mine[p_day] = p_had_sugar;
     if (p_had_sugar) count++;

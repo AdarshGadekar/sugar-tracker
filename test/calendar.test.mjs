@@ -43,10 +43,11 @@ test("counts and lock: 3 sugar days ok, 4th locks", () => {
   assert.equal(chancesLeft(m), 0);
 });
 
-test("canMark: no future, no re-mark, nothing when locked", () => {
+test("canMark: past days only (not today, not future), no re-mark, nothing when locked", () => {
   const today = "2026-11-05";
   const m = { "2026-11-01": false };
-  assert.equal(canMark("2026-11-05", m, today), true);
+  assert.equal(canMark("2026-11-04", m, today), true);
+  assert.equal(canMark("2026-11-05", m, today), false);   // today isn't over yet
   assert.equal(canMark("2026-11-06", m, today), false);
   assert.equal(canMark("2026-11-01", m, today), false);
   const locked = { a: true, b: true, c: true, d: true };

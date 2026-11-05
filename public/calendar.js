@@ -37,9 +37,9 @@ export function chancesLeft(marks) {
   return Math.max(0, MAX_SUGAR - sugarCount(marks));
 }
 
-/** Can this day be clicked? Not future, not already marked, account not locked. */
+/** Can this day be marked? Only past days (today isn't over yet), not already marked, account not locked. */
 export function canMark(iso, marks, today) {
-  return iso <= today && !(iso in marks) && !isLocked(marks);
+  return iso < today && !(iso in marks) && !isLocked(marks);
 }
 
 /**

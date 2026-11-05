@@ -78,18 +78,19 @@
     </section>
 
     <!-- App -->
-    <section id="app-view" hidden>
+    <section id="app-view" class="app-grid" hidden>
       <div id="status" class="card player">
         <div id="player-name" class="player-name"></div>
         <div id="hearts" class="hearts" aria-live="polite"></div>
         <div id="chances" class="muted"></div>
         <div id="streak" class="streak" hidden></div>
       </div>
+      <div class="col-main">
       <div id="locked-banner" class="banner" hidden>
         Your tracker is locked — you had sugar more than 3 times. You can still view your history.
       </div>
 
-      <div class="card">
+      <div class="card cal-card">
         <div class="cal-nav">
           <button id="prev" class="secondary" aria-label="Previous month">‹</button>
           <h2 id="month-label"></h2>
@@ -103,7 +104,9 @@
           <span><i class="dot no"></i> No sugar</span>
           <span><i class="dot yes"></i> Sugar</span>
           <span><i class="dot open"></i> Not marked</span>
+          <span>⏳ Today unlocks tomorrow</span>
         </div>
+      </div>
       </div>
 
       <div class="card board">

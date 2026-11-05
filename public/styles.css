@@ -24,14 +24,14 @@
 [hidden] { display: none !important; }
 html { -webkit-font-smoothing: antialiased; }
 body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font: 16px/1.5 var(--font); padding-bottom: 72px; overflow-x: hidden; }
-.wrap { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; padding: 16px; }
+.wrap { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 16px; }
 .top {
   position: sticky; top: 0; z-index: 5;
   background: color-mix(in srgb, var(--bg) 65%, transparent); border-bottom: 1px solid var(--line);
   backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 .top-inner {
-  max-width: 520px; margin: 0 auto; min-height: 56px; padding: 10px 16px;
+  max-width: 1080px; margin: 0 auto; min-height: 56px; padding: 10px 16px;
   display: flex; justify-content: space-between; align-items: center;
 }
 .account { display: flex; align-items: center; gap: 10px; animation: swap .45s var(--ease); }
@@ -176,7 +176,7 @@ form.card h2, .verify h2 { margin: 0 0 16px; font-size: 1.5rem; letter-spacing: 
   border: 1px solid var(--line); font-weight: 500;
   transition: transform .35s var(--spring), background-color .3s var(--ease), border-color .3s var(--ease), box-shadow .3s var(--ease);
 }
-.day:not(:disabled):hover { transform: scale(1.08); border-color: var(--accent); box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 25%, transparent); }
+.day:not(:disabled):not(.nope):hover { transform: scale(1.08); border-color: var(--accent); box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 25%, transparent); }
 .day.no { background: var(--good-bg); border-color: var(--good); color: var(--good); font-weight: 600; }
 .day.yes { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); font-weight: 600; }
 .day.today { box-shadow: 0 0 0 2px var(--accent); }
@@ -299,6 +299,77 @@ dialog .link { display: block; margin: 10px auto 0; }
 @keyframes fact-out { to { opacity: 0; transform: translate(-50%, 20px) scale(.96); filter: blur(4px); } }
 @keyframes icon-pop { from { transform: scale(0) rotate(-30deg); } to { transform: none; } }
 @keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* ============ Phase 2: responsive layout ============ */
+#auth-view { max-width: 520px; margin: 0 auto; }
+.app-grid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "player" "main" "board"; max-width: 520px; margin: 0 auto; }
+.app-grid > #status { grid-area: player; }
+.app-grid > .col-main { grid-area: main; min-width: 0; }
+.app-grid > .board { grid-area: board; }
+.app-grid .card, .app-grid .banner { margin-bottom: 0; }
+.col-main { display: flex; flex-direction: column; gap: 14px; }
+@media (min-width: 600px) { .app-grid { max-width: 680px; } }
+@media (min-width: 900px) {
+  .app-grid { max-width: none; grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: auto 1fr;
+    grid-template-areas: "player main" "board main"; align-items: start; gap: 20px; }
+  .app-grid > .board { align-self: start; }
+  .cal-card { padding: 24px 28px 22px; }
+  .cal-nav { margin-bottom: 16px; }
+  .cal-nav h2 { font-size: 1.5rem; }
+  .cal-nav button { width: 42px; height: 42px; }
+  .cal td { padding: 5px; }
+  .day { border-radius: 16px; }
+  .day .num { font-size: 1.2rem; }
+}
+
+/* Day cell content */
+.day { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.1; }
+.day .num { font-size: 1rem; }
+.day .tick { font-size: .7rem; font-weight: 700; opacity: .85; }
+.day .tag { font-size: .58rem; font-weight: 600; color: var(--accent); white-space: nowrap; }
+@media (max-width: 480px) {
+  .day .tag { font-size: 0; } .day .tag::after { content: "⏳"; font-size: .6rem; }
+  .cal-card { padding: 14px 10px; }
+  .cal td { padding: 2px; }
+  .day { border-radius: 10px; }
+}
+.legend { flex-wrap: wrap; row-gap: 4px; }
+.legend > span { white-space: nowrap; }
+.day.nope { cursor: help; }
+.day.nope.today { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.day.wiggle { animation: wiggle .5s var(--ease); }
+@keyframes wiggle { 20% { transform: rotate(-8deg) scale(1.05); } 40% { transform: rotate(7deg); } 60% { transform: rotate(-4deg); } 80% { transform: rotate(2deg); } }
+
+/* "Not yet" speech bubble */
+.bubble { position: fixed; z-index: 45; transform: translateY(-100%); pointer-events: none;
+  padding: 10px 14px; border-radius: 14px; font-size: .88rem; font-weight: 500; line-height: 1.35;
+  background: var(--text); color: var(--bg); box-shadow: 0 12px 30px rgb(0 0 0 / .3); }
+.bubble::after { content: ""; position: absolute; top: 100%; left: var(--arrow, 50%); margin-left: -7px;
+  border: 7px solid transparent; border-top-color: var(--text); }
+.bubble.show { animation: bubble-in .4s var(--spring); }
+@keyframes bubble-in { from { opacity: 0; transform: translateY(calc(-100% + 8px)) scale(.9); } to { opacity: 1; transform: translateY(-100%); } }
+
+/* ============ Sudoku: levels, lives, timer, stats ============ */
+.sdk-panel { width: 262px; }
+.sdk-levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 3px; margin-bottom: 8px;
+  border-radius: 980px; background: var(--line); }
+.sdk-levels button { padding: 5px 0; font-size: .75rem; font-weight: 600; background: transparent; color: var(--muted); }
+.sdk-levels button:not(:disabled):hover { box-shadow: none; transform: none; color: var(--text); }
+.sdk-levels button.on { background: var(--card-solid); color: var(--text); box-shadow: 0 1px 4px rgb(0 0 0 / .2); }
+.sdk-status { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: .9rem; }
+.sdk-lives { display: flex; gap: 3px; }
+.sdk-lives .lost { filter: grayscale(1); opacity: .45; }
+.sdk-lives .breaking { animation: heart-break 1s var(--ease); }
+.sdk-time { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--muted); }
+.sdk-grid { width: max-content; margin: 0 auto; }
+.sdk-grid.lost { opacity: .55; filter: grayscale(.6); }
+.sdk-cell.ok { color: var(--good); animation: cell-ok .35s var(--spring); }
+.sdk-cell.bad { animation: nudge .4s var(--ease); }
+.sdk-cell.win { animation: cell-win .6s var(--spring) both; animation-delay: var(--d, 0ms); }
+@keyframes cell-ok { from { transform: scale(.6); } to { transform: none; } }
+@keyframes cell-win { 40% { transform: scale(1.25); background: var(--good-bg); color: var(--good); } 100% { transform: none; } }
+.sdk-stats { margin-top: 6px; font-size: .72rem; text-align: center; }
 
 /* ============ Mock badge (local only) ============ */
 .mock-badge { position: fixed; left: 12px; bottom: 12px; z-index: 10; font-size: .75rem; font-weight: 600;

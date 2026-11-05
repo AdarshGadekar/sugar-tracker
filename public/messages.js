@@ -36,4 +36,23 @@ export const GAME_OVER = [
   { icon: "💔", text: "Game over this round. You still tracked every day honestly — that's a real win." },
 ];
 
-export const pick = (list) => list[Math.floor(Math.random() * list.length)];
+// Speech-bubble lines when someone pokes today's square (not markable until the day is over).
+export const TODAY_LINES = [
+  "Nice try! The day isn't over — that 11 PM cookie still counts 🍪",
+  "Come back tomorrow. Today is still writing its story 📖",
+  "Patience, champ. Mark it once the day is done 🌙",
+  "Not so fast! Dessert o'clock hasn't even happened yet 🍨",
+  "Today's still cooking. Check in tomorrow 👩‍🍳",
+  "Hold your horses 🐎 — the day has hours left in it.",
+  "No early bird specials here. Tomorrow! 🐦",
+];
+
+// …and when they poke a future day.
+export const FUTURE_LINES = [
+  "Whoa, time traveller! 🚀 That day hasn't happened yet.",
+  "Predicting the future? Bold. Let's live it first 🔮",
+  "Future you will handle this one 😎",
+  "Spoilers! We don't know how this day ends yet 🎬",
+];
+
+export const pick =(list) => list[Math.floor(Math.random() * list.length)];

@@ -1,6 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { generate, canPlace, isSolved } from "../public/sudoku.js";
+import { generate, canPlace, isSolved, LEVELS } from "../public/sudoku.js";
+
+test("difficulty levels: more blanks as it gets harder, hard generates quickly", () => {
+  assert.ok(LEVELS.easy < LEVELS.medium && LEVELS.medium < LEVELS.hard);
+  const t = Date.now();
+  const { puzzle } = generate(LEVELS.hard);
+  const blanks = puzzle.filter((v) => v === 0).length;
+  assert.ok(blanks >= 45 && blanks <= LEVELS.hard, `hard blanks = ${blanks}`);
+  assert.ok(Date.now() - t < 3000, "hard puzzle took too long");
+});
 
 test("generated solution is a valid full grid", () => {
   const { solution } = generate(40);

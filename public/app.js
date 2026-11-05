@@ -3,13 +3,14 @@ import {
   MAX_SUGAR, monthGrid, todayISO, sugarCount, isLocked, chancesLeft, canMark, formatDay, currentStreak,
 } from "./calendar.js";
 import { mountSudoku } from "./sudoku.js";
-import { CLEAN, SLIP, LAST_LIFE, GAME_OVER, pick } from "./messages.js";
+import { CLEAN, SLIP, LAST_LIFE, GAME_OVER, TODAY_LINES, FUTURE_LINES, pick } from "./messages.js";
 
 mountSudoku(document.getElementById("sudoku"));
 
 const cfg = window.SUGAR_CONFIG || {};
 const $ = (id) => document.getElementById(id);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
 // Local mock backend: only on localhost, only with ?mock in the URL.
 const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
@@ -285,7 +286,7 @@ async function onDayClick(iso) {
   if ((await ask($("confirm-dialog"))) !== "confirm") return;
 
   state.busy = true;
-  const { data, error } = await supabase.rpc("mark_day", { p_day: iso, p_had_sugar: hadSugar });
+  const { data, error } = await supabase.rpc("mark_day", { p_day: iso, p_had_sugar: hadSugar, p_tz: timeZone });
   state.busy = false;
 
   if (error) {
@@ -425,17 +426,36 @@ function render(opts = {}) {
       const td = document.createElement("td");
       if (iso) {
         const b = document.createElement("button");
+        const isToday = iso === today, isFuture = iso > today;
         b.className = "day";
         b.style.setProperty("--i", n++);
-        b.textContent = Number(iso.slice(8));
-        if (iso in state.marks) b.classList.add(state.marks[iso] ? "yes" : "no");
-        if (iso === today) b.classList.add("today");
-        if (iso > today) b.classList.add("future");
+        const num = Object.assign(document.createElement("span"), { className: "num", textContent: Number(iso.slice(8)) });
+        b.append(num);
+        if (iso in state.marks) {
+          b.classList.add(state.marks[iso] ? "yes" : "no");
+          b.append(Object.assign(document.createElement("span"), { className: "tick", textContent: state.marks[iso] ? "✕" : "✓" }));
+        }
+        if (isToday) {
+          b.classList.add("today");
+          if (!(iso in state.marks)) b.append(Object.assign(document.createElement("span"), { className: "tag", textContent: "today ⏳" }));
+        }
+        if (isFuture) b.classList.add("future");
         if (iso === opts.justMarked) { b.classList.add("just-marked"); marked = b; }
-        b.disabled = !canMark(iso, state.marks, today);
-        b.title = iso in state.marks ? (state.marks[iso] ? "Had sugar" : "No sugar")
-          : iso > today ? "Future" : locked ? "Locked" : "Click to mark";
-        b.addEventListener("click", () => onDayClick(iso));
+
+        if ((isToday || isFuture) && !(iso in state.marks)) {
+          // Not markable yet: answer pokes with a playful bubble instead.
+          b.classList.add("nope");
+          b.setAttribute("aria-disabled", "true");
+          b.setAttribute("aria-label", `${formatDay(iso)} — not over yet`);
+          b.addEventListener("click", () => poke(b, isToday));
+          b.addEventListener("mouseenter", () => poke(b, isToday, true));
+          b.addEventListener("mouseleave", hideBubble);
+        } else {
+          b.disabled = !canMark(iso, state.marks, today);
+          b.title = iso in state.marks ? (state.marks[iso] ? "Had sugar" : "No sugar")
+            : locked ? "Locked" : "Click to mark";
+          b.addEventListener("click", () => onDayClick(iso));
+        }
         td.append(b);
       }
       tr.append(td);
@@ -451,6 +471,34 @@ function render(opts = {}) {
   }
   if (marked && state.marks[opts.justMarked] === false) burst(marked);
 }
+
+// ---------- "Not yet" speech bubble ----------
+const bubble = Object.assign(document.createElement("div"), { className: "bubble", role: "status", hidden: true });
+document.body.append(bubble);
+let bubbleTimer, bubbleFor = null;
+
+function poke(cell, isToday, fromHover = false) {
+  if (fromHover && bubbleFor === cell && !bubble.hidden) return; // keep the same line while hovering
+  bubbleFor = cell;
+  bubble.textContent = pick(isToday ? TODAY_LINES : FUTURE_LINES);
+  bubble.hidden = false;
+  const r = cell.getBoundingClientRect();
+  const w = Math.min(260, innerWidth - 24);
+  bubble.style.width = `${w}px`;
+  bubble.style.left = `${Math.max(12, Math.min(innerWidth - w - 12, r.left + r.width / 2 - w / 2))}px`;
+  bubble.style.setProperty("--arrow", `${r.left + r.width / 2 - parseFloat(bubble.style.left)}px`);
+  bubble.style.top = `${r.top - 10}px`;
+  replay(bubble, "show");
+  if (!fromHover) replay(cell, "wiggle");
+  clearTimeout(bubbleTimer);
+  bubbleTimer = setTimeout(hideBubble, fromHover ? 4000 : 3000);
+}
+function hideBubble() {
+  clearTimeout(bubbleTimer);
+  bubble.hidden = true;
+  bubbleFor = null;
+}
+addEventListener("scroll", hideBubble, { passive: true });
 
 function changeMonth(dir) {
   state.view = new Date(state.view.getFullYear(), state.view.getMonth() + dir, 1);
