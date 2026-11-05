@@ -101,7 +101,10 @@ export function createMockClient() {
     db.messages.push(m);
     db.messages = db.messages.slice(-300);
     save(db);
-    setTimeout(() => broadcast("INSERT", m), 120); // Realtime arrives a moment later
+    // Realtime arrives a moment later, with Postgres-style timestamps ("2026-11-05 08:50:30.565000"),
+    // exactly like the real thing — the app must cope with both formats.
+    const pgStyle = { ...m, created_at: m.created_at.replace("T", " ").replace("Z", "000") };
+    setTimeout(() => broadcast("INSERT", pgStyle), 120);
     return m;
   }
 
@@ -120,18 +123,22 @@ export function createMockClient() {
           const all = (db.messages || []).slice().reverse();
           return { data: q.n ? all.slice(0, q.n) : all, error: null };
         }),
-        async insert({ body }) {
-          await wait(200);
-          const uid = currentId();
-          if (!uid) return { error: err("42501", "permission denied") };
-          const text = String(body || "").trim();
-          if (!text || text.length > 500) return { error: err("23514", "Message must be 1–500 characters.") };
-          const last = (db.messages || []).filter((m) => m.user_id === uid && m.kind === "user").at(-1);
-          if (last && Date.now() - new Date(last.created_at) < 2000) {
-            return { error: err("P0001", "Slow down a little — one message every 2 seconds.") };
-          }
-          postMessage({ user_id: uid, name: nameOf(uid), body: text });
-          return { error: null };
+        // insert(...) / insert(...).select().single() — both supported, like supabase-js
+        insert({ body }) {
+          const run = (async () => {
+            await wait(200);
+            const uid = currentId();
+            if (!uid) return { data: null, error: err("42501", "permission denied") };
+            const text = String(body || "").trim();
+            if (!text || text.length > 500) return { data: null, error: err("23514", "Message must be 1–500 characters.") };
+            const last = (db.messages || []).filter((m) => m.user_id === uid && m.kind === "user").at(-1);
+            if (last && Date.now() - new Date(last.created_at) < 2000) {
+              return { data: null, error: err("P0001", "Slow down a little — one message every 2 seconds.") };
+            }
+            return { data: postMessage({ user_id: uid, name: nameOf(uid), body: text }), error: null };
+          })();
+          const chain = { select: () => chain, single: () => run, then: (a, b) => run.then(a, b) };
+          return chain;
         },
         delete: () => ({
           async eq(_col, id) {

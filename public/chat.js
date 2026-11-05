@@ -4,6 +4,22 @@
 const LIMIT = 100;
 const COLS = "id, user_id, name, body, kind, created_at";
 
+/**
+ * Parse timestamps from both REST ("2026-11-05T08:50:30.565778+00:00") and
+ * Realtime ("2026-11-05 08:50:30.565778", sometimes without a zone). Never throws.
+ */
+export function toDate(value) {
+  if (value instanceof Date) return value;
+  let s = String(value ?? "").trim().replace(" ", "T").replace(/(\.\d{3})\d+/, "$1");
+  s = s.replace(/([+-]\d\d)$/, "$1:00");              // "+00" -> "+00:00"
+  if (s && !/(Z|[+-]\d\d:?\d\d)$/i.test(s)) s += "Z"; // no zone -> UTC
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? new Date() : d;
+}
+
+/** Normalise a row so every created_at is a proper ISO string. */
+const normalise = (m) => ({ ...m, created_at: toDate(m.created_at).toISOString() });
+
 export function createChat({ supabase, $, replay }) {
   const panel = $("chat");
   const list = $("chat-list");
@@ -114,13 +130,15 @@ export function createChat({ supabase, $, replay }) {
     const { data, error } = await supabase.from("messages").select(COLS)
       .order("created_at", { ascending: false }).limit(LIMIT);
     if (error) { showError("Chat isn't available right now."); return; }
-    messages = data.slice().reverse();
+    messages = data.slice().reverse().map(normalise);
     renderAll();
     toBottom();
     updateBadge();
   }
 
-  function onInsert(m) {
+  function onInsert(raw) {
+    if (!raw || raw.id == null) return;
+    const m = normalise(raw);
     if (messages.some((x) => x.id === m.id)) return;
     const stick = nearBottom();
     const prev = messages.at(-1);
@@ -149,12 +167,13 @@ export function createChat({ supabase, $, replay }) {
     const body = input.value.trim();
     if (!body) return;
     input.disabled = true;
-    const { error } = await supabase.from("messages").insert({ body });
+    const { data, error } = await supabase.from("messages").insert({ body }).select(COLS).single();
     input.disabled = false;
     input.focus();
     if (error) return showError(/2 seconds|slow down/i.test(error.message) ? "Slow down a little — one message every 2 seconds." : error.message);
     input.value = "";
     errEl.hidden = true;
+    onInsert(data); // show it right away; the Realtime copy is ignored as a duplicate
   }
 
   async function remove(id) {
