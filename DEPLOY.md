@@ -34,6 +34,8 @@
 ## Run locally
 ```
 npm run config   # needs SUPABASE_URL / SUPABASE_ANON_KEY in env, or use the existing public/config.js
-npm run serve    # http://localhost:5173
+npm run serve    # http://localhost:5173  (real Supabase)
+                 # http://localhost:5173/?mock  (fake in-browser backend + test users,
+                 #   see public/mock-supabase.js; only works on localhost)
 npm test
 ```

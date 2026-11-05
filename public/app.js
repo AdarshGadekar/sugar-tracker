@@ -8,14 +8,30 @@ mountSudoku(document.getElementById("sudoku"));
 
 const cfg = window.SUGAR_CONFIG || {};
 const $ = (id) => document.getElementById(id);
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
+// Local mock backend: only on localhost, only with ?mock in the URL.
+const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
+const useMock = isLocal && new URLSearchParams(location.search).has("mock");
+
+if (!useMock && (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY)) {
   document.querySelector("main").innerHTML =
-    '<div class="card">Missing config.js â€” copy config.example.js to config.js and add your Supabase URL and anon key.</div>';
+    '<div class="card">Missing config.js — copy config.example.js to config.js and add your Supabase URL and anon key.</div>';
   throw new Error("Missing Supabase config");
 }
 
-const supabase = createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+let supabase;
+if (useMock) {
+  const mock = await import("./mock-supabase.js");
+  supabase = mock.createMockClient();
+  const badge = document.createElement("div");
+  badge.className = "mock-badge";
+  badge.innerHTML = 'Mock mode <button class="link" type="button">reset data</button>';
+  badge.querySelector("button").addEventListener("click", () => { mock.resetMock(); location.reload(); });
+  document.body.append(badge);
+} else {
+  supabase = createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+}
 
 const state = {
   user: null,
@@ -24,6 +40,36 @@ const state = {
   busy: false,
 };
 
+// ---------- Motion helpers ----------
+/** Re-run a CSS entrance animation by toggling a class. */
+function replay(el, cls = "enter") {
+  if (!el) return;
+  el.classList.remove(cls);
+  void el.offsetWidth; // restart animation
+  el.classList.add(cls);
+}
+
+/** Small particle burst from an element (used for "no sugar" wins). */
+function burst(el) {
+  if (reduceMotion || !el) return;
+  const r = el.getBoundingClientRect();
+  const layer = document.createElement("div");
+  layer.className = "burst";
+  layer.style.left = `${r.left + r.width / 2}px`;
+  layer.style.top = `${r.top + r.height / 2}px`;
+  for (let i = 0; i < 14; i++) {
+    const p = document.createElement("i");
+    const angle = (i / 14) * Math.PI * 2;
+    const dist = 38 + Math.random() * 26;
+    p.style.setProperty("--x", `${Math.cos(angle) * dist}px`);
+    p.style.setProperty("--y", `${Math.sin(angle) * dist}px`);
+    p.style.setProperty("--h", `${120 + Math.random() * 40}`);
+    layer.append(p);
+  }
+  document.body.append(layer);
+  setTimeout(() => layer.remove(), 900);
+}
+
 // ---------- UI helpers ----------
 let toastTimer;
 function toast(text, isError = false) {
@@ -31,8 +77,12 @@ function toast(text, isError = false) {
   el.textContent = text;
   el.className = "toast" + (isError ? " error" : "");
   el.hidden = false;
+  replay(el, "show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (el.hidden = true), 3500);
+  toastTimer = setTimeout(() => {
+    el.classList.add("hide");
+    setTimeout(() => (el.hidden = true), 350);
+  }, 3500);
 }
 
 function ask(dialog) {
@@ -49,24 +99,33 @@ let pending = null;   // { email, password } while waiting for email confirmatio
 let pollTimer = null;
 
 function showScreen(name) {
-  document.querySelectorAll("[data-screen]").forEach((el) => (el.hidden = el.dataset.screen !== name));
+  document.querySelectorAll("[data-screen]").forEach((el) => {
+    el.hidden = el.dataset.screen !== name;
+    if (!el.hidden) replay(el);
+  });
   document.querySelectorAll("[data-screen] .msg").forEach((el) => (el.textContent = ""));
   if (name !== "verify") stopPolling();
   const first = document.querySelector(`[data-screen="${name}"] input`);
-  if (first) first.focus();
+  if (first) first.focus({ preventScroll: true });
 }
 
 function setMsg(scope, text, isError = true) {
   const el = scope.querySelector(".msg");
   el.textContent = text;
   el.classList.toggle("error", isError);
+  if (isError) replay(scope, "nudge");
 }
 
 async function busy(button, label, fn) {
   const old = button.textContent;
   button.disabled = true;
+  button.classList.add("loading");
   button.textContent = label;
-  try { return await fn(); } finally { button.disabled = false; button.textContent = old; }
+  try { return await fn(); } finally {
+    button.disabled = false;
+    button.classList.remove("loading");
+    button.textContent = old;
+  }
 }
 
 function friendly(error) {
@@ -87,7 +146,7 @@ async function signIn(e) {
     () => supabase.auth.signInWithPassword({ email, password }));
   if (!error) return; // onAuthStateChange takes over
   if (isUnconfirmed(error)) return startVerify(email, password);
-  setMsg(form, error.message === "Invalid login credentials" ? "Wrong email or password." : error.message);
+  setMsg(form, error.message === "Invalid login credentials" ? "Wrong email or password." : friendly(error));
 }
 
 async function signUp(e) {
@@ -117,7 +176,7 @@ function startVerify(email, password) {
   pollTimer = setInterval(() => {
     if (Date.now() - started > 15 * 60 * 1000) return stopPolling();
     checkConfirmed(false);
-  }, 15000);
+  }, useMock ? 3000 : 15000);
 }
 
 function stopPolling() {
@@ -131,7 +190,7 @@ async function checkConfirmed(manual) {
   if (!error) { pending = null; stopPolling(); return; }
   if (!manual) return;
   const box = document.querySelector('[data-screen="verify"]');
-  setMsg(box, isUnconfirmed(error) ? "Not confirmed yet — click the link in the email first." : error.message);
+  setMsg(box, isUnconfirmed(error) ? "Not confirmed yet — click the link in the email first." : friendly(error));
 }
 
 async function resend(e) {
@@ -157,7 +216,9 @@ supabase.auth.onAuthStateChange((_event, session) => {
   showView();
 });
 
+let viewShown = false;
 function showView() {
+  viewShown = true;
   const signedIn = !!state.user;
   $("auth-view").hidden = signedIn;
   $("app-view").hidden = !signedIn;
@@ -165,19 +226,20 @@ function showView() {
   if (signedIn) {
     pending = null;
     stopPolling();
-    if (location.hash.includes("access_token")) history.replaceState(null, "", location.pathname);
-    loadMarks();
+    if (location.hash.includes("access_token")) history.replaceState(null, "", location.pathname + location.search);
+    replay($("app-view"));
+    loadMarks({ animate: true });
   } else if (!pending) {
     showScreen("landing");
   }
 }
 
 // ---------- Data ----------
-async function loadMarks() {
+async function loadMarks(opts = {}) {
   const { data, error } = await supabase.from("day_marks").select("day, had_sugar");
   if (error) return toast("Could not load your days: " + error.message, true);
   state.marks = Object.fromEntries(data.map((r) => [r.day, r.had_sugar]));
-  render();
+  render(opts);
 }
 
 async function onDayClick(iso) {
@@ -193,7 +255,7 @@ async function onDayClick(iso) {
     `Mark ${formatDay(iso)} as "${hadSugar ? "Had sugar" : "No sugar"}"? This can't be changed later.`;
   $("confirm-warn").textContent = !hadSugar ? ""
     : used >= MAX_SUGAR
-      ? "This is sugar day #" + (used + 1) + " â€” your tracker will be LOCKED."
+      ? `This is sugar day #${used + 1} — your tracker will be LOCKED.`
       : `This uses chance ${used + 1} of ${MAX_SUGAR}.`;
   if ((await ask($("confirm-dialog"))) !== "confirm") return;
 
@@ -206,8 +268,8 @@ async function onDayClick(iso) {
     return loadMarks(); // resync with the server's truth
   }
   state.marks[iso] = hadSugar;
-  render();
-  if (data.locked) toast("Saved. You've had sugar more than 3 times â€” your tracker is now locked.", true);
+  render({ justMarked: iso });
+  if (data.locked) toast("Saved. You've had sugar more than 3 times — your tracker is now locked.", true);
   else if (hadSugar) toast(`Saved: sugar day. ${data.sugar_count} of ${data.max_sugar} chances used.`);
   else toast("Saved: no sugar. Nice work!");
 }
@@ -227,7 +289,8 @@ function renderPlayer(used, locked) {
   for (let i = 0; i < MAX_SUGAR; i++) {
     const h = document.createElement("span");
     const alive = i < lives;
-    h.className = "heart" + (alive ? "" : " lost");
+    h.className = "heart" + (alive ? " alive" : " lost");
+    h.style.setProperty("--i", i);
     h.textContent = alive ? "❤️" : "💔";
     if (!alive && shownLives !== null && i >= lives && i < shownLives) h.classList.add("breaking");
     hearts.append(h);
@@ -236,24 +299,35 @@ function renderPlayer(used, locked) {
   hearts.classList.toggle("dead", locked);
   if (locked && shownLives !== null && !hearts.dataset.over) {
     hearts.dataset.over = "1";
-    hearts.classList.add("shake");
+    replay(hearts, "shake");
   }
 
-  $("chances").textContent = locked
+  const text = locked
     ? `Game over — ${used} sugar days`
     : lives === 0
       ? "Last chance used — no more sugar!"
       : `${lives} of ${MAX_SUGAR} lives left`;
+  if ($("chances").textContent !== text) {
+    $("chances").textContent = text;
+    replay($("chances"), "swap");
+  }
   shownLives = lives;
 }
 
-function render() {
+/**
+ * opts.animate    – stagger the day cells in (first load)
+ * opts.dir        – -1 / 1 slide direction for month changes
+ * opts.justMarked – ISO day that was just saved (pop + burst)
+ */
+function render(opts = {}) {
   const today = todayISO();
   const locked = isLocked(state.marks);
   const used = sugarCount(state.marks);
 
   renderPlayer(used, locked);
-  $("locked-banner").hidden = !locked;
+  const banner = $("locked-banner");
+  if (banner.hidden && locked) replay(banner);
+  banner.hidden = !locked;
 
   const y = state.view.getFullYear(), m = state.view.getMonth();
   $("month-label").textContent = state.view.toLocaleDateString(undefined, { month: "long", year: "numeric" });
@@ -262,6 +336,7 @@ function render() {
 
   const body = $("cal-body");
   body.replaceChildren();
+  let n = 0, marked = null;
   for (const week of monthGrid(y, m)) {
     const tr = document.createElement("tr");
     for (const iso of week) {
@@ -269,10 +344,12 @@ function render() {
       if (iso) {
         const b = document.createElement("button");
         b.className = "day";
+        b.style.setProperty("--i", n++);
         b.textContent = Number(iso.slice(8));
         if (iso in state.marks) b.classList.add(state.marks[iso] ? "yes" : "no");
         if (iso === today) b.classList.add("today");
         if (iso > today) b.classList.add("future");
+        if (iso === opts.justMarked) { b.classList.add("just-marked"); marked = b; }
         b.disabled = !canMark(iso, state.marks, today);
         b.title = iso in state.marks ? (state.marks[iso] ? "Had sugar" : "No sugar")
           : iso > today ? "Future" : locked ? "Locked" : "Click to mark";
@@ -283,6 +360,19 @@ function render() {
     }
     body.append(tr);
   }
+
+  body.classList.remove("enter", "from-left", "from-right");
+  if (opts.animate || opts.dir) {
+    if (opts.dir) body.classList.add(opts.dir > 0 ? "from-right" : "from-left");
+    replay(body);
+    replay($("month-label"), "swap");
+  }
+  if (marked && state.marks[opts.justMarked] === false) burst(marked);
+}
+
+function changeMonth(dir) {
+  state.view = new Date(state.view.getFullYear(), state.view.getMonth() + dir, 1);
+  render({ dir });
 }
 
 // ---------- Wire up ----------
@@ -293,9 +383,11 @@ $("verify-resend").addEventListener("click", resend);
 document.querySelectorAll("[data-go]").forEach((b) =>
   b.addEventListener("click", () => { pending = null; showScreen(b.dataset.go); }));
 $("signout").addEventListener("click", () => supabase.auth.signOut());
-$("prev").addEventListener("click", () => { state.view = new Date(state.view.getFullYear(), state.view.getMonth() - 1, 1); render(); });
-$("next").addEventListener("click", () => { state.view = new Date(state.view.getFullYear(), state.view.getMonth() + 1, 1); render(); });
+$("prev").addEventListener("click", () => changeMonth(-1));
+$("next").addEventListener("click", () => changeMonth(1));
 
 const { data: { session } } = await supabase.auth.getSession();
-state.user = session?.user ?? null;
-showView();
+if (!viewShown) { // the auth listener may already have rendered
+  state.user = session?.user ?? null;
+  showView();
+}

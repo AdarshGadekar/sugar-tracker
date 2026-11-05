@@ -3,13 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
   <title>Sugar Tracker</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="ambient" aria-hidden="true"><span></span><span></span><span></span></div>
   <main class="wrap">
     <header class="top">
-      <h1>Sugar Tracker</h1>
+      <h1 class="brand">Sugar Tracker</h1>
       <button id="signout" class="link" hidden>Sign out</button>
     </header>
 
@@ -17,8 +19,11 @@
     <section id="auth-view" hidden>
       <!-- Landing -->
       <div class="card hero" data-screen="landing">
-        <div class="hero-hearts" aria-hidden="true">❤️ ❤️ ❤️</div>
-        <h2>Quit sugar, one day at a time</h2>
+        <div class="hero-hearts" aria-hidden="true">
+          <span style="--i:0">❤️</span><span style="--i:1">❤️</span><span style="--i:2">❤️</span>
+        </div>
+        <p class="eyebrow">Your daily sugar check-in</p>
+        <h2 class="headline">Quit sugar.<br /><span class="grad">One day at a time.</span></h2>
         <p class="muted">Mark each day on a calendar: sugar or no sugar. You get <strong>3 lives</strong>.
           Every sugar day breaks a heart — the 4th one is game over.</p>
         <div class="stack">
