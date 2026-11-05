@@ -179,6 +179,25 @@ export function createChat({ supabase, $, replay }) {
     updateBadge();
   }
 
+  // ---------- emoji picker ----------
+  const EMOJIS = ["😀", "😂", "🥹", "😍", "😎", "🤔", "😅", "😭", "😤", "🥳", "👍", "👏", "🙌", "💪", "🙏", "🤝",
+    "❤️", "💔", "🔥", "✨", "🎉", "🏆", "✅", "❌", "🍫", "🍩", "🍰", "🍭", "🥗", "🍎", "💧", "🚶"];
+  const pop = $("emoji-pop"), emojiBtn = $("emoji-btn");
+  pop.append(...EMOJIS.map((e) => {
+    const b = Object.assign(document.createElement("button"), { type: "button", textContent: e, role: "option" });
+    b.addEventListener("click", () => {
+      const s = input.selectionStart ?? input.value.length, t = input.selectionEnd ?? s;
+      input.value = (input.value.slice(0, s) + e + input.value.slice(t)).slice(0, 500);
+      input.focus();
+      input.setSelectionRange(s + e.length, s + e.length);
+    });
+    return b;
+  }));
+  const setPop = (v) => { pop.hidden = !v; emojiBtn.setAttribute("aria-expanded", String(v)); if (v) replay(pop, "show"); };
+  emojiBtn.addEventListener("click", () => setPop(pop.hidden));
+  document.addEventListener("click", (e) => { if (!pop.hidden && !pop.contains(e.target) && e.target !== emojiBtn) setPop(false); });
+  form.addEventListener("submit", () => setPop(false));
+
   $("chat-toggle").addEventListener("click", () => setOpen(!open));
   $("chat-close").addEventListener("click", () => setOpen(false));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && open) setOpen(false); });

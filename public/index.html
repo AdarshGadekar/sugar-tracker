@@ -136,7 +136,9 @@
     </header>
     <ol id="chat-list" class="chat-list" aria-live="polite"></ol>
     <p id="chat-error" class="chat-error" role="alert" hidden></p>
+    <div id="emoji-pop" class="emoji-pop" role="listbox" aria-label="Emojis" hidden></div>
     <form id="chat-form" class="chat-form">
+      <button id="emoji-btn" type="button" class="secondary emoji-btn" aria-label="Add emoji" aria-expanded="false">😊</button>
       <input id="chat-input" maxlength="500" placeholder="Say something nice…" autocomplete="off" aria-label="Message" />
       <button type="submit">Send</button>
     </form>
