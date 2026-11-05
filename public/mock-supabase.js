@@ -2,15 +2,14 @@
 // Mimics the parts of supabase-js the app uses, with the same rules as supabase/schema.sql.
 // Everything lives in this browser's localStorage; nothing is sent anywhere.
 //
-// Seeded test users (mock only — not real accounts):
-//   test@sugar.test   / test1234  -> 1 sugar day used, 2 lives left
-//   locked@sugar.test / test1234  -> 4 sugar days, tracker locked
+// Seeded test user (mock only — not a real account), starts with an empty calendar:
+//   test@sugar.test / test1234
 // Sign up with any new email: it "confirms" itself 6 seconds later.
 // Sign up with an email containing "ratelimit" to see the rate-limit error.
 
 import { currentStreak } from "./calendar.js";
 
-const KEY = "sugar_mock_v2";
+const KEY = "sugar_mock_v3";
 const MAX_SUGAR = 3;
 const CONFIRM_AFTER_MS = 6000;
 
@@ -23,24 +22,14 @@ function seed() {
   return {
     users: {
       "test@sugar.test": { id: "u-test", password: "test1234", name: "Test User", confirmAt: 0 },
-      "locked@sugar.test": { id: "u-locked", password: "test1234", name: "Locked Lucy", confirmAt: 0 },
-      // fake friends for the leaderboard (no password = can't sign in)
-      "asha@sugar.test": { id: "u-asha", password: null, name: "Asha", confirmAt: 0 },
-      "rohan@sugar.test": { id: "u-rohan", password: null, name: "Rohan", confirmAt: 0 },
-      "meera@sugar.test": { id: "u-meera", password: null, name: "Meera", confirmAt: 0 },
     },
-    marks: {
-      "u-test": { [daysAgo(6)]: false, [daysAgo(5)]: false, [daysAgo(4)]: true, [daysAgo(2)]: false },
-      "u-locked": { [daysAgo(9)]: true, [daysAgo(7)]: true, [daysAgo(5)]: true, [daysAgo(3)]: true, [daysAgo(1)]: false },
-      "u-asha": Object.fromEntries([...Array(9).keys()].map((i) => [daysAgo(i), false])),
-      "u-rohan": { [daysAgo(8)]: true, [daysAgo(6)]: false, [daysAgo(5)]: true, [daysAgo(3)]: false, [daysAgo(2)]: false, [daysAgo(1)]: false },
-      "u-meera": { [daysAgo(4)]: false, [daysAgo(3)]: false, [daysAgo(2)]: true },
-    },
+    marks: {},
     session: null,
   };
 }
 
 function load() {
+  try { ["sugar_mock_v1", "sugar_mock_v2"].forEach((k) => localStorage.removeItem(k)); } catch { /* ignore */ }
   try { return JSON.parse(localStorage.getItem(KEY)) || seed(); } catch { return seed(); }
 }
 function save(db) {
@@ -76,7 +65,7 @@ export function createMockClient() {
     async signInWithPassword({ email, password }) {
       await wait(450);
       const u = db.users[email];
-      if (!u || !u.password || u.password !== password) return { data: {}, error: err("invalid_credentials", "Invalid login credentials") };
+      if (!u || u.password !== password) return { data: {}, error: err("invalid_credentials", "Invalid login credentials") };
       if (Date.now() < u.confirmAt) return { data: {}, error: err("email_not_confirmed", "Email not confirmed") };
       db.session = email; save(db); emit("SIGNED_IN");
       return { data: { session: session() }, error: null };
