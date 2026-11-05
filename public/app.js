@@ -4,6 +4,7 @@ import {
 } from "./calendar.js";
 import { mountSudoku } from "./sudoku.js";
 import { CLEAN, SLIP, LAST_LIFE, GAME_OVER, TODAY_LINES, FUTURE_LINES, pick } from "./messages.js";
+import { createChat } from "./chat.js";
 
 mountSudoku(document.getElementById("sudoku"));
 
@@ -28,12 +29,16 @@ if (useMock) {
   supabase = mock.createMockClient();
   const badge = document.createElement("div");
   badge.className = "mock-badge";
-  badge.innerHTML = 'Mock mode <button class="link" type="button">reset data</button>';
-  badge.querySelector("button").addEventListener("click", () => { mock.resetMock(); location.reload(); });
+  badge.innerHTML = 'Mock mode <button class="link" type="button" data-act="friend">friend message</button>'
+    + '<button class="link" type="button" data-act="reset">reset data</button>';
+  badge.querySelector('[data-act="reset"]').addEventListener("click", () => { mock.resetMock(); location.reload(); });
+  badge.querySelector('[data-act="friend"]').addEventListener("click", () => supabase.simulateFriendMessage());
   document.body.append(badge);
 } else {
   supabase = createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
 }
+
+const chat = createChat({ supabase, $, replay });
 
 const state = {
   user: null,
@@ -254,8 +259,10 @@ function showView() {
     if (location.hash.includes("access_token")) history.replaceState(null, "", location.pathname + location.search);
     replay($("app-view"));
     loadMarks({ animate: true });
-  } else if (!pending) {
-    showScreen("landing");
+    chat.start(state.user);
+  } else {
+    chat.stop();
+    if (!pending) showScreen("landing");
   }
 }
 
@@ -296,6 +303,7 @@ async function onDayClick(iso) {
   state.marks[iso] = hadSugar;
   render({ justMarked: iso });
   loadBoard();
+  chat.refresh(); // pick up any milestone post
 
   if (data.locked) {
     showFact("Game over — tracker locked", pick(GAME_OVER), "bad");

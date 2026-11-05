@@ -88,7 +88,64 @@ export function createMockClient() {
     async signOut() { db.session = null; save(db); emit("SIGNED_OUT"); return { error: null }; },
   };
 
+  // ---------- chat (messages table + fake Realtime) ----------
+  const channels = new Set();
+  const broadcast = (event, row) => channels.forEach((ch) => ch.handlers
+    .filter((h) => h.event === event).forEach((h) => h.cb(event === "INSERT" ? { new: row } : { old: { id: row.id } })));
+  const nameOf = (uid) => Object.values(db.users).find((u) => u.id === uid)?.name || "Player";
+
+  function postMessage(row) {
+    db.messages ||= [];
+    db.nextMsgId ||= 1;
+    const m = { id: db.nextMsgId++, created_at: new Date().toISOString(), kind: "user", ...row };
+    db.messages.push(m);
+    db.messages = db.messages.slice(-300);
+    save(db);
+    setTimeout(() => broadcast("INSERT", m), 120); // Realtime arrives a moment later
+    return m;
+  }
+
+  // thenable query builder: select().order().limit()
+  function query(run) {
+    const q = { order: () => q, limit: (n) => { q.n = n; return q; },
+      then: (ok, bad) => wait(200).then(() => run(q)).then(ok, bad) };
+    return q;
+  }
+
   function from(table) {
+    if (table === "messages") {
+      return {
+        select: () => query((q) => {
+          if (!currentId()) return { data: null, error: err("42501", "permission denied") };
+          const all = (db.messages || []).slice().reverse();
+          return { data: q.n ? all.slice(0, q.n) : all, error: null };
+        }),
+        async insert({ body }) {
+          await wait(200);
+          const uid = currentId();
+          if (!uid) return { error: err("42501", "permission denied") };
+          const text = String(body || "").trim();
+          if (!text || text.length > 500) return { error: err("23514", "Message must be 1–500 characters.") };
+          const last = (db.messages || []).filter((m) => m.user_id === uid && m.kind === "user").at(-1);
+          if (last && Date.now() - new Date(last.created_at) < 2000) {
+            return { error: err("P0001", "Slow down a little — one message every 2 seconds.") };
+          }
+          postMessage({ user_id: uid, name: nameOf(uid), body: text });
+          return { error: null };
+        },
+        delete: () => ({
+          async eq(_col, id) {
+            await wait(150);
+            const m = (db.messages || []).find((x) => x.id === id);
+            if (!m || m.user_id !== currentId() || m.kind !== "user") return { error: err("42501", "permission denied") };
+            db.messages = db.messages.filter((x) => x.id !== id);
+            save(db);
+            broadcast("DELETE", m);
+            return { error: null };
+          },
+        }),
+      };
+    }
     return {
       async select() {
         await wait(250);
@@ -97,6 +154,22 @@ export function createMockClient() {
         return { data: Object.entries(mine).map(([day, had_sugar]) => ({ day, had_sugar })), error: null };
       },
     };
+  }
+
+  function channel() {
+    const ch = { handlers: [],
+      on(_type, filter, cb) { ch.handlers.push({ event: filter.event, cb }); return ch; },
+      subscribe() { channels.add(ch); return ch; } };
+    return ch;
+  }
+  const removeChannel = (ch) => channels.delete(ch);
+
+  const FRIENDS = ["Asha", "Rohan", "Meera"];
+  const LINES = ["Day 3 without sugar and I already feel lighter 😄", "Who else is craving chocolate right now? 🍫",
+    "Pro tip: frozen grapes hit the sweet spot 🍇", "You've got this everyone 💪", "Skipped dessert at a wedding. Proud of me!"];
+  function simulateFriendMessage() {
+    postMessage({ user_id: "u-friend-" + Math.floor(Math.random() * 3), name: FRIENDS[Math.floor(Math.random() * 3)],
+      body: LINES[Math.floor(Math.random() * LINES.length)] });
   }
 
   function leaderboard() {
@@ -136,8 +209,24 @@ export function createMockClient() {
     mine[p_day] = p_had_sugar;
     if (p_had_sugar) count++;
     save(db);
+
+    // milestone posts (same rules as supabase/chat.sql)
+    const name = nameOf(uid);
+    if (p_had_sugar) {
+      const left = Math.max(0, MAX_SUGAR - count);
+      postMessage({ user_id: uid, name, kind: "system", body: count > MAX_SUGAR
+        ? `☠️ ${name} is out of lives — game over. Thanks for playing honestly!`
+        : left === 0 ? `⚠️ ${name} just used their last life. Cheer them on — no more sugar!`
+        : `💔 ${name} lost a life (${left} left). Send some support!` });
+    } else if (p_day === daysAgo(1)) {
+      let run = 0;
+      for (let i = 1; mine[daysAgo(i)] === false; i++) run++;
+      if ([3, 7, 14, 21, 30, 50, 100].includes(run)) {
+        postMessage({ user_id: uid, name, kind: "system", body: `🔥 ${name} hit a ${run}-day no-sugar streak!` });
+      }
+    }
     return { data: { sugar_count: count, max_sugar: MAX_SUGAR, locked: count > MAX_SUGAR }, error: null };
   }
 
-  return { auth, from, rpc };
+  return { auth, from, rpc, channel, removeChannel, simulateFriendMessage };
 }

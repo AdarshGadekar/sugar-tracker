@@ -13,6 +13,9 @@
     <div class="top-inner">
       <h1 class="brand">Sugar Tracker</h1>
       <div class="account" id="account" hidden>
+        <button id="chat-toggle" class="secondary small chat-toggle" type="button" aria-expanded="false" aria-controls="chat">
+          💬 Chat<span id="chat-badge" class="chat-badge" hidden>0</span>
+        </button>
         <span class="avatar" id="avatar" aria-hidden="true"></span>
         <button id="signout" class="secondary small" type="button">Sign out</button>
       </div>
@@ -121,6 +124,23 @@
 
     <p id="toast" class="toast" role="status" hidden></p>
   </main>
+
+  <!-- Group chat drawer -->
+  <aside id="chat" class="chat" aria-label="Group chat" hidden>
+    <header class="chat-head">
+      <div>
+        <strong>Group chat</strong>
+        <span class="muted small-text">Everyone on Sugar Tracker</span>
+      </div>
+      <button id="chat-close" class="secondary small" type="button" aria-label="Close chat">✕</button>
+    </header>
+    <ol id="chat-list" class="chat-list" aria-live="polite"></ol>
+    <p id="chat-error" class="chat-error" role="alert" hidden></p>
+    <form id="chat-form" class="chat-form">
+      <input id="chat-input" maxlength="500" placeholder="Say something nice…" autocomplete="off" aria-label="Message" />
+      <button type="submit">Send</button>
+    </form>
+  </aside>
 
   <!-- Pop-up message after marking a day -->
   <div id="fact" class="fact" role="status" aria-live="polite" hidden>
