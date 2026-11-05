@@ -91,7 +91,9 @@ export function createMockClient() {
   // ---------- chat (messages table + fake Realtime) ----------
   const channels = new Set();
   // Fake Realtime. For direct_messages it only delivers rows the signed-in user may see (like RLS).
+  let realtimeOn = true; // can be switched off to simulate a sleeping/dropped Realtime connection
   const broadcast = (event, row, table = "messages") => {
+    if (!realtimeOn) return;
     if (table === "direct_messages" && ![row.sender_id, row.recipient_id].includes(currentId())) return;
     channels.forEach((ch) => ch.handlers
       .filter((h) => h.event === event && h.table === table)
@@ -216,7 +218,7 @@ export function createMockClient() {
   function channel() {
     const ch = { handlers: [],
       on(_type, filter, cb) { ch.handlers.push({ event: filter.event, table: filter.table, cb }); return ch; },
-      subscribe() { channels.add(ch); return ch; } };
+      subscribe(cb) { channels.add(ch); if (cb) setTimeout(() => cb("SUBSCRIBED"), 50); return ch; } };
     return ch;
   }
   const removeChannel = (ch) => channels.delete(ch);
@@ -338,5 +340,6 @@ export function createMockClient() {
     return { data: { sugar_count: count, max_sugar: MAX_SUGAR, locked: count > MAX_SUGAR }, error: null };
   }
 
-  return { auth, from, rpc, channel, removeChannel, simulateFriendMessage, simulateFriendDm };
+  return { auth, from, rpc, channel, removeChannel, simulateFriendMessage, simulateFriendDm,
+    setRealtime: (on) => { realtimeOn = !!on; } };
 }

@@ -31,7 +31,14 @@ if (useMock) {
   badge.className = "mock-badge";
   badge.innerHTML = 'Mock mode <button class="link" type="button" data-act="friend">friend message</button>'
     + '<button class="link" type="button" data-act="dm">friend DM</button>'
+    + '<button class="link" type="button" data-act="live">live: on</button>'
     + '<button class="link" type="button" data-act="reset">reset data</button>';
+  let liveOn = true;
+  badge.querySelector('[data-act="live"]').addEventListener("click", (e) => {
+    liveOn = !liveOn;
+    supabase.setRealtime(liveOn);
+    e.currentTarget.textContent = `live: ${liveOn ? "on" : "off"}`;
+  });
   badge.querySelector('[data-act="dm"]').addEventListener("click", () => supabase.simulateFriendDm());
   badge.querySelector('[data-act="reset"]').addEventListener("click", () => { mock.resetMock(); location.reload(); });
   badge.querySelector('[data-act="friend"]').addEventListener("click", () => supabase.simulateFriendMessage());

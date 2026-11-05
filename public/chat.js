@@ -246,6 +246,85 @@ export function createChat({ supabase, $, replay }) {
     updateBadges();
   }
 
+  // ---------- catch-up sync (safety net for Realtime) ----------
+  // Free-tier Realtime sleeps when idle and can take minutes to resume; sockets also drop when a
+  // laptop sleeps. So we also poll: every 3 s while the chat is open, every 15 s while it's closed.
+  let syncing = false;
+  async function sync() {
+    if (!me || syncing) return;
+    syncing = true;
+    try {
+      const { data } = await supabase.from("messages").select(COLS)
+        .order("created_at", { ascending: false }).limit(LIMIT);
+      if (Array.isArray(data)) {
+        const fresh = data.slice().reverse().map(normalise);
+        const ids = new Set(fresh.map((m) => m.id));
+        const oldest = fresh[0]?.id ?? Infinity;
+        const gone = group.filter((m) => m.id >= oldest && !ids.has(m.id));
+        gone.forEach((m) => onGroupDelete(m.id));
+        fresh.filter((m) => !group.some((x) => x.id === m.id)).forEach(onGroupInsert);
+      }
+      if (view === "thread" && other) {
+        const who = other.id;
+        const { data: dms } = await supabase.rpc("dm_thread", { p_other: who });
+        if (Array.isArray(dms) && other?.id === who) {
+          const ids = new Set(dms.map((d) => d.id));
+          if (thread.some((m) => !ids.has(m.id))) { thread = thread.filter((m) => ids.has(m.id)); renderMessages(); }
+          const added = dms.filter((d) => !thread.some((m) => m.id === d.id));
+          added.forEach((d) => appendMessage(fromDm(d)));
+          if (added.some((d) => d.sender_id !== me.id) && open) await supabase.rpc("mark_dm_read", { p_other: who });
+        }
+      }
+      await loadThreads();
+    } finally {
+      syncing = false;
+    }
+  }
+
+  let pollTimer = null;
+  function schedulePoll() {
+    clearTimeout(pollTimer);
+    if (!me) return;
+    const every = document.visibilityState === "hidden" ? 60000 : open ? 3000 : 15000;
+    pollTimer = setTimeout(async () => { await sync(); schedulePoll(); }, every);
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && me) { sync(); schedulePoll(); }
+  });
+  addEventListener("online", () => { if (me) { sync(); resubscribe(); } });
+
+  // ---------- Realtime channel with auto-reconnect ----------
+  let retryTimer = null;
+  async function subscribe() {
+    if (!me) return;
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.access_token) supabase.realtime?.setAuth?.(data.session.access_token);
+    } catch { /* mock or offline: fine */ }
+    if (!me || channel) return;
+    const ch = supabase.channel("chat:" + me.id + ":" + Date.now())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (p) => onGroupInsert(p.new))
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages" }, (p) => onGroupDelete(p.old?.id))
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "direct_messages" }, (p) => onDmInsert(p.new))
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "direct_messages" }, (p) => onDmDelete(p.old?.id));
+    channel = ch;
+    ch.subscribe((status) => {
+      if (ch !== channel) return; // an old channel we already replaced — ignore its events
+      if (status === "SUBSCRIBED") sync(); // catch anything missed while (re)connecting
+      if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(resubscribe, 4000);
+      }
+    });
+  }
+  function resubscribe() {
+    if (!me) return;
+    const old = channel;
+    channel = null;
+    if (old) supabase.removeChannel(old);
+    subscribe();
+  }
+
   function onGroupInsert(raw) {
     if (!raw || raw.id == null) return;
     const m = normalise(raw);
@@ -344,10 +423,11 @@ export function createChat({ supabase, $, replay }) {
     if (v) {
       replay(panel, "show");
       if (view === "group") { toBottom(); markGroupSeen(); }
-      if (view === "threads") loadThreads();
       if (view !== "threads") input.focus({ preventScroll: true });
+      sync(); // catch up immediately on open
     } else setPop(false);
     updateBadges();
+    schedulePoll(); // faster while open, slower while closed
   }
 
   $("chat-toggle").addEventListener("click", () => setOpen(!open));
@@ -367,16 +447,15 @@ export function createChat({ supabase, $, replay }) {
       lastSeenId = loadSeen();
       setView("group");
       await Promise.all([loadGroup(), loadThreads()]);
-      channel = supabase.channel("chat:" + user.id)
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (p) => onGroupInsert(p.new))
-        .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages" }, (p) => onGroupDelete(p.old?.id))
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "direct_messages" }, (p) => onDmInsert(p.new))
-        .on("postgres_changes", { event: "DELETE", schema: "public", table: "direct_messages" }, (p) => onDmDelete(p.old?.id))
-        .subscribe();
+      await subscribe();
+      schedulePoll();
     },
     stop() {
-      if (channel) supabase.removeChannel(channel);
+      clearTimeout(pollTimer);
+      clearTimeout(retryTimer);
+      const old = channel;
       channel = null;
+      if (old) supabase.removeChannel(old);
       me = null;
       group = []; thread = []; threads = []; other = null;
       setOpen(false);
