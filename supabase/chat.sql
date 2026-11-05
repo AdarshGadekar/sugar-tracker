@@ -57,6 +57,9 @@ begin
 end;
 $$;
 
+-- Trigger-only function: nobody should be able to call it over the API.
+revoke all on function public.messages_before_insert() from public, anon, authenticated;
+
 drop trigger if exists messages_before_insert on public.messages;
 create trigger messages_before_insert before insert on public.messages
   for each row execute function public.messages_before_insert();
