@@ -435,6 +435,31 @@ dialog .link { display: block; margin: 10px auto 0; }
 .emoji-pop button { padding: 6px 0; font-size: 1.25rem; background: transparent; border-radius: 10px; }
 .emoji-pop button:not(:disabled):hover { background: var(--line); box-shadow: none; transform: scale(1.15); }
 
+/* ============ Direct messages ============ */
+.chat-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.chat-title strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-head #chat-back { font-size: 1.3rem; }
+.chat-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 10px 14px 0; padding: 3px;
+  border-radius: 980px; background: var(--line); }
+.chat-tabs button { padding: 6px 0; font-size: .82rem; font-weight: 600; background: transparent; color: var(--muted);
+  display: flex; justify-content: center; align-items: center; gap: 6px; }
+.chat-tabs button:not(:disabled):hover { box-shadow: none; transform: none; color: var(--text); }
+.chat-tabs button.on { background: var(--card-solid); color: var(--text); box-shadow: 0 1px 4px rgb(0 0 0 / .2); }
+.tab-badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 980px; background: var(--accent-3);
+  color: #fff; font-size: .66rem; font-weight: 700; display: inline-grid; place-items: center; }
+.dm-threads { flex: 1; overflow-y: auto; list-style: none; margin: 0; padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+.dm-row { width: 100%; display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;
+  padding: 10px; border-radius: 14px; background: transparent; color: var(--text); text-align: left; }
+.dm-row:not(:disabled):hover { background: var(--line); box-shadow: none; transform: none; }
+.dm-row:nth-child(n) .avatar { background: linear-gradient(135deg, var(--accent-3), #ff9f0a); }
+.dm-who { display: flex; flex-direction: column; min-width: 0; }
+.dm-who strong { font-size: .92rem; }
+.dm-prev { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dm-row.unread .dm-prev { color: var(--text); font-weight: 600; }
+.dm-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: .7rem; color: var(--muted); }
+.board-row { grid-template-columns: 28px 34px 1fr auto auto; }
+.board-dm { width: 32px; height: 32px; padding: 0; font-size: .9rem; }
+
 /* ============ Brand ============ */
 .brand { display: flex; align-items: center; gap: 8px; }
 .brand-mark { display: inline-block; transition: transform .5s var(--spring); }

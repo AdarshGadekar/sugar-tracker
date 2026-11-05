@@ -1,8 +1,9 @@
-// Group chat room: one room for everyone signed in, live via Supabase Realtime.
+// Chat: one group room + private 1-to-1 direct messages, live via Supabase Realtime.
 // Works the same against the real client and the local mock.
 
 const LIMIT = 100;
 const COLS = "id, user_id, name, body, kind, created_at";
+const DM_COLS = "id, sender_id, recipient_id, body, created_at, read_at";
 
 /**
  * Parse timestamps from both REST ("2026-11-05T08:50:30.565778+00:00") and
@@ -21,31 +22,38 @@ export function toDate(value) {
 const normalise = (m) => ({ ...m, created_at: toDate(m.created_at).toISOString() });
 
 export function createChat({ supabase, $, replay }) {
-  const panel = $("chat");
-  const list = $("chat-list");
-  const form = $("chat-form");
-  const input = $("chat-input");
-  const badge = $("chat-badge");
-  const errEl = $("chat-error");
+  const panel = $("chat"), list = $("chat-list"), threadsEl = $("dm-threads");
+  const form = $("chat-form"), input = $("chat-input"), errEl = $("chat-error");
+  const badge = $("chat-badge"), backBtn = $("chat-back");
 
-  let me = null;
-  let channel = null;
-  let messages = [];       // oldest -> newest
-  let lastSeenId = 0;
-  let open = false;
+  let me = null, channel = null, open = false;
+  let view = "group";          // "group" | "threads" | "thread"
+  let other = null;            // { id, name } when view === "thread"
+  let group = [];              // group messages, oldest -> newest
+  let thread = [];             // current DM thread, in the same shape as group messages
+  let threads = [];            // conversation list from dm_threads()
+  let lastSeenId = 0;          // last group message seen
 
   const seenKey = () => `sugar_chat_seen_${me?.id}`;
   const loadSeen = () => { try { return Number(localStorage.getItem(seenKey())) || 0; } catch { return 0; } };
   const saveSeen = (id) => { try { localStorage.setItem(seenKey(), String(id)); } catch { /* ignore */ } };
 
+  // DM rows -> the same shape the bubble renderer uses
+  const fromDm = (d) => normalise({
+    id: d.id, user_id: d.sender_id, kind: "user", body: d.body, created_at: d.created_at,
+    name: d.sender_id === me?.id ? "You" : other?.name || "Player",
+    _dm: true, _other: d.sender_id === me?.id ? d.recipient_id : d.sender_id,
+  });
+
   // ---------- rendering ----------
   const timeFmt = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
   const dayFmt = new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short" });
+  const initial = (name) => (name || "?").charAt(0).toUpperCase();
 
   function bubbleFor(m, prev) {
     const li = document.createElement("li");
     li.dataset.id = m.id;
-    const at = new Date(m.created_at);
+    const at = toDate(m.created_at);
 
     if (m.kind === "system") {
       li.className = "msg system";
@@ -55,14 +63,11 @@ export function createChat({ supabase, $, replay }) {
 
     const mine = m.user_id === me?.id;
     const grouped = prev && prev.kind === "user" && prev.user_id === m.user_id
-      && at - new Date(prev.created_at) < 5 * 60 * 1000;
+      && at - toDate(prev.created_at) < 5 * 60 * 1000;
     li.className = "msg" + (mine ? " mine" : "") + (grouped ? " grouped" : "");
 
     if (!mine && !grouped) {
-      const av = Object.assign(document.createElement("span"), {
-        className: "avatar xs", textContent: (m.name || "?").charAt(0).toUpperCase(),
-      });
-      li.append(av);
+      li.append(Object.assign(document.createElement("span"), { className: "avatar xs", textContent: initial(m.name) }));
     }
     const box = document.createElement("div");
     box.className = "msg-box";
@@ -75,91 +80,208 @@ export function createChat({ supabase, $, replay }) {
       );
       box.append(head);
     }
-    const text = Object.assign(document.createElement("p"), { className: "msg-text", textContent: m.body });
-    box.append(text);
+    box.append(Object.assign(document.createElement("p"), { className: "msg-text", textContent: m.body }));
     if (mine) {
       const del = Object.assign(document.createElement("button"), {
         type: "button", className: "msg-del", textContent: "Delete", title: "Delete message",
       });
-      del.addEventListener("click", () => remove(m.id));
+      del.addEventListener("click", () => remove(m));
       box.append(del);
     }
     li.append(box);
     return li;
   }
 
-  function dayDivider(date) {
-    return Object.assign(document.createElement("li"), { className: "msg-day", textContent: dayFmt.format(date) });
-  }
+  const dayDivider = (d) => Object.assign(document.createElement("li"), { className: "msg-day", textContent: dayFmt.format(d) });
+  const current = () => (view === "thread" ? thread : group);
 
-  function renderAll() {
+  function renderMessages() {
+    const msgs = current();
     list.replaceChildren();
     let prev = null;
-    for (const m of messages) {
-      if (!prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString()) {
-        list.append(dayDivider(new Date(m.created_at)));
+    for (const m of msgs) {
+      if (!prev || toDate(prev.created_at).toDateString() !== toDate(m.created_at).toDateString()) {
+        list.append(dayDivider(toDate(m.created_at)));
         prev = null;
       }
       list.append(bubbleFor(m, prev));
       prev = m;
     }
-    if (!messages.length) {
+    if (!msgs.length) {
       list.append(Object.assign(document.createElement("li"), {
-        className: "msg-empty", textContent: "No messages yet. Say hi 👋",
+        className: "msg-empty",
+        textContent: view === "thread" ? `Say hi to ${other?.name} 👋` : "No messages yet. Say hi 👋",
       }));
+    }
+    toBottom();
+  }
+
+  function appendMessage(m) {
+    const msgs = current();
+    const prev = msgs.at(-1);
+    const stick = nearBottom();
+    msgs.push(m);
+    if (list.querySelector(".msg-empty")) return renderMessages();
+    if (!prev || toDate(prev.created_at).toDateString() !== toDate(m.created_at).toDateString()) {
+      list.append(dayDivider(toDate(m.created_at)));
+    }
+    const li = bubbleFor(m, prev);
+    li.classList.add("new");
+    list.append(li);
+    if (stick || m.user_id === me?.id) toBottom();
+  }
+
+  function renderThreads() {
+    threadsEl.replaceChildren();
+    if (!threads.length) {
+      threadsEl.append(Object.assign(document.createElement("li"), {
+        className: "msg-empty", textContent: "No one else here yet — invite a friend!",
+      }));
+      return;
+    }
+    for (const t of threads) {
+      const li = document.createElement("li");
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "dm-row" + (t.unread ? " unread" : "");
+      const preview = t.last_body ? (t.last_from_me ? "You: " : "") + t.last_body : "Start a conversation";
+      b.innerHTML = `<span class="avatar sm"></span><span class="dm-who"><strong></strong><span class="dm-prev"></span></span>`
+        + `<span class="dm-meta"><time></time>${t.unread ? `<span class="tab-badge">${t.unread > 9 ? "9+" : t.unread}</span>` : ""}</span>`;
+      b.querySelector(".avatar").textContent = initial(t.name);
+      b.querySelector("strong").textContent = t.name;
+      b.querySelector(".dm-prev").textContent = preview;
+      b.querySelector("time").textContent = t.last_at ? timeFmt.format(toDate(t.last_at)) : "";
+      b.addEventListener("click", () => openThread({ id: t.user_id, name: t.name }));
+      li.append(b);
+      threadsEl.append(li);
     }
   }
 
   const nearBottom = () => list.scrollHeight - list.scrollTop - list.clientHeight < 80;
   const toBottom = () => { list.scrollTop = list.scrollHeight; };
 
-  function updateBadge() {
-    const unread = messages.filter((m) => m.id > lastSeenId && m.user_id !== me?.id).length;
-    badge.textContent = unread > 9 ? "9+" : String(unread);
-    badge.hidden = unread === 0 || open;
+  // ---------- unread badges ----------
+  const groupUnread = () => group.filter((m) => m.id > lastSeenId && m.user_id !== me?.id).length;
+  const dmUnread = () => threads.reduce((n, t) => n + (t.unread || 0), 0);
+  const setBadge = (el, n) => { el.textContent = n > 9 ? "9+" : String(n); el.hidden = n === 0; };
+
+  function updateBadges() {
+    const g = view === "group" && open ? 0 : groupUnread();
+    setBadge($("tab-badge-group"), g);
+    setBadge($("tab-badge-direct"), dmUnread());
+    setBadge(badge, open ? 0 : g + dmUnread());
   }
 
-  function markSeen() {
-    const last = messages.at(-1);
+  function markGroupSeen() {
+    const last = group.at(-1);
     if (last) { lastSeenId = Math.max(lastSeenId, last.id); saveSeen(lastSeenId); }
-    updateBadge();
+    updateBadges();
+  }
+
+  // ---------- views ----------
+  function setView(v) {
+    view = v;
+    const isThread = v === "thread";
+    list.hidden = v === "threads";
+    threadsEl.hidden = v !== "threads";
+    form.hidden = v === "threads";
+    backBtn.hidden = !isThread;
+    errEl.hidden = true;
+    document.querySelectorAll("#chat [data-tab]").forEach((b) => {
+      const on = b.dataset.tab === (v === "group" ? "group" : "direct");
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-selected", String(on));
+    });
+    $("chat-title").textContent = isThread ? other.name : v === "group" ? "Group chat" : "Direct messages";
+    $("chat-sub").textContent = isThread ? "Private — only you two can see this"
+      : v === "group" ? "Everyone on Desserted" : "Private 1-to-1 chats";
+    input.placeholder = isThread ? `Message ${other.name}…` : "Say something nice…";
+    updateBadges();
+  }
+
+  async function showGroup() {
+    setView("group");
+    renderMessages();
+    markGroupSeen();
+  }
+
+  async function showThreads() {
+    other = null;
+    setView("threads");
+    await loadThreads();
+  }
+
+  async function openThread(person) {
+    other = person;
+    thread = [];
+    setView("thread");
+    renderMessages();
+    const { data, error } = await supabase.rpc("dm_thread", { p_other: person.id });
+    if (error) return showError("Couldn't load this conversation.");
+    if (other?.id !== person.id) return; // switched away meanwhile
+    thread = data.map(fromDm);
+    renderMessages();
+    input.focus({ preventScroll: true });
+    await supabase.rpc("mark_dm_read", { p_other: person.id });
+    const t = threads.find((x) => x.user_id === person.id);
+    if (t) t.unread = 0;
+    updateBadges();
   }
 
   // ---------- data ----------
-  async function load() {
+  async function loadGroup() {
     const { data, error } = await supabase.from("messages").select(COLS)
       .order("created_at", { ascending: false }).limit(LIMIT);
     if (error) { showError("Chat isn't available right now."); return; }
-    messages = data.slice().reverse().map(normalise);
-    renderAll();
-    toBottom();
-    updateBadge();
+    group = data.slice().reverse().map(normalise);
+    if (view === "group") renderMessages();
+    updateBadges();
   }
 
-  function onInsert(raw) {
+  async function loadThreads() {
+    const { data, error } = await supabase.rpc("dm_threads");
+    if (error) { threads = []; if (view === "threads") showError("Direct messages aren't available yet."); return; }
+    threads = data;
+    if (view === "threads") renderThreads();
+    updateBadges();
+  }
+
+  function onGroupInsert(raw) {
     if (!raw || raw.id == null) return;
     const m = normalise(raw);
-    if (messages.some((x) => x.id === m.id)) return;
-    const stick = nearBottom();
-    const prev = messages.at(-1);
-    messages.push(m);
-    if (list.querySelector(".msg-empty")) renderAll();
-    else {
-      if (!prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString()) {
-        list.append(dayDivider(new Date(m.created_at)));
-      }
-      const li = bubbleFor(m, prev);
-      li.classList.add("new");
-      list.append(li);
-    }
-    if (stick || m.user_id === me?.id) toBottom();
-    if (open) markSeen(); else { updateBadge(); replay($("chat-toggle"), "ping"); }
+    if (group.some((x) => x.id === m.id)) return;
+    if (view === "group") appendMessage(m); else group.push(m);
+    if (open && view === "group") markGroupSeen();
+    else { updateBadges(); if (m.user_id !== me?.id) replay($("chat-toggle"), "ping"); }
   }
 
-  function onDelete(id) {
-    messages = messages.filter((m) => m.id !== id);
-    renderAll();
-    updateBadge();
+  function onGroupDelete(id) {
+    group = group.filter((m) => m.id !== id);
+    if (view === "group") renderMessages();
+    updateBadges();
+  }
+
+  function onDmInsert(raw) {
+    if (!raw || raw.id == null || !me) return;
+    const otherId = raw.sender_id === me.id ? raw.recipient_id : raw.sender_id;
+    if (view === "thread" && other?.id === otherId) {
+      if (thread.some((x) => x.id === raw.id)) return;
+      appendMessage(fromDm(raw));
+      if (raw.sender_id !== me.id && open) supabase.rpc("mark_dm_read", { p_other: otherId });
+    } else if (raw.sender_id !== me.id) {
+      const t = threads.find((x) => x.user_id === otherId);
+      if (t) t.unread = (t.unread || 0) + 1;
+      replay($("chat-toggle"), "ping");
+    }
+    loadThreads(); // refresh previews/order (and unread counts from the server)
+  }
+
+  function onDmDelete(id) {
+    if (view === "thread" && thread.some((m) => m.id === id)) {
+      thread = thread.filter((m) => m.id !== id);
+      renderMessages();
+    }
+    loadThreads();
   }
 
   async function send(e) {
@@ -167,35 +289,32 @@ export function createChat({ supabase, $, replay }) {
     const body = input.value.trim();
     if (!body) return;
     input.disabled = true;
-    const { data, error } = await supabase.from("messages").insert({ body }).select(COLS).single();
+    const res = view === "thread"
+      ? await supabase.from("direct_messages").insert({ recipient_id: other.id, body }).select(DM_COLS).single()
+      : await supabase.from("messages").insert({ body }).select(COLS).single();
     input.disabled = false;
     input.focus();
-    if (error) return showError(/2 seconds|slow down/i.test(error.message) ? "Slow down a little — one message every 2 seconds." : error.message);
+    if (res.error) {
+      return showError(/slow down/i.test(res.error.message) ? res.error.message : "Couldn't send. Please try again.");
+    }
     input.value = "";
     errEl.hidden = true;
-    onInsert(data); // show it right away; the Realtime copy is ignored as a duplicate
+    // show it right away; the Realtime copy is ignored as a duplicate
+    if (view === "thread") { if (!thread.some((x) => x.id === res.data.id)) appendMessage(fromDm(res.data)); loadThreads(); }
+    else onGroupInsert(res.data);
   }
 
-  async function remove(id) {
-    const { error } = await supabase.from("messages").delete().eq("id", id);
+  async function remove(m) {
+    const table = m._dm ? "direct_messages" : "messages";
+    const { error } = await supabase.from(table).delete().eq("id", m.id);
     if (error) return showError("Couldn't delete that message.");
-    onDelete(id);
+    if (m._dm) onDmDelete(m.id); else onGroupDelete(m.id);
   }
 
   function showError(text) {
     errEl.textContent = text;
     errEl.hidden = false;
     replay(errEl, "nudge");
-  }
-
-  // ---------- open / close ----------
-  function setOpen(v) {
-    open = v;
-    panel.hidden = !v;
-    $("chat-toggle").setAttribute("aria-expanded", String(v));
-    document.body.classList.toggle("chat-open", v);
-    if (v) { replay(panel, "show"); toBottom(); markSeen(); input.focus({ preventScroll: true }); }
-    updateBadge();
   }
 
   // ---------- emoji picker ----------
@@ -217,8 +336,25 @@ export function createChat({ supabase, $, replay }) {
   document.addEventListener("click", (e) => { if (!pop.hidden && !pop.contains(e.target) && e.target !== emojiBtn) setPop(false); });
   form.addEventListener("submit", () => setPop(false));
 
+  // ---------- open / close ----------
+  function setOpen(v) {
+    open = v;
+    panel.hidden = !v;
+    $("chat-toggle").setAttribute("aria-expanded", String(v));
+    if (v) {
+      replay(panel, "show");
+      if (view === "group") { toBottom(); markGroupSeen(); }
+      if (view === "threads") loadThreads();
+      if (view !== "threads") input.focus({ preventScroll: true });
+    } else setPop(false);
+    updateBadges();
+  }
+
   $("chat-toggle").addEventListener("click", () => setOpen(!open));
   $("chat-close").addEventListener("click", () => setOpen(false));
+  backBtn.addEventListener("click", showThreads);
+  document.querySelectorAll("#chat [data-tab]").forEach((b) =>
+    b.addEventListener("click", () => (b.dataset.tab === "group" ? showGroup() : showThreads())));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && open) setOpen(false); });
   form.addEventListener("submit", send);
 
@@ -229,21 +365,30 @@ export function createChat({ supabase, $, replay }) {
       this.stop();
       me = user;
       lastSeenId = loadSeen();
-      await load();
-      channel = supabase.channel("room:everyone")
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (p) => onInsert(p.new))
-        .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages" }, (p) => onDelete(p.old?.id))
+      setView("group");
+      await Promise.all([loadGroup(), loadThreads()]);
+      channel = supabase.channel("chat:" + user.id)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (p) => onGroupInsert(p.new))
+        .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages" }, (p) => onGroupDelete(p.old?.id))
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "direct_messages" }, (p) => onDmInsert(p.new))
+        .on("postgres_changes", { event: "DELETE", schema: "public", table: "direct_messages" }, (p) => onDmDelete(p.old?.id))
         .subscribe();
     },
     stop() {
       if (channel) supabase.removeChannel(channel);
       channel = null;
       me = null;
-      messages = [];
+      group = []; thread = []; threads = []; other = null;
       setOpen(false);
       badge.hidden = true;
     },
+    /** Open a private conversation (e.g. from the leaderboard). */
+    openDM(person) {
+      if (!me || !person?.id || person.id === me.id) return;
+      setOpen(true);
+      openThread(person);
+    },
     /** Called after the user marks a day, so milestone posts show up even without Realtime. */
-    refresh: () => (me ? load() : null),
+    refresh: () => (me ? loadGroup() : null),
   };
 }

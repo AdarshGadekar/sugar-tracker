@@ -30,7 +30,9 @@ if (useMock) {
   const badge = document.createElement("div");
   badge.className = "mock-badge";
   badge.innerHTML = 'Mock mode <button class="link" type="button" data-act="friend">friend message</button>'
+    + '<button class="link" type="button" data-act="dm">friend DM</button>'
     + '<button class="link" type="button" data-act="reset">reset data</button>';
+  badge.querySelector('[data-act="dm"]').addEventListener("click", () => supabase.simulateFriendDm());
   badge.querySelector('[data-act="reset"]').addEventListener("click", () => { mock.resetMock(); location.reload(); });
   badge.querySelector('[data-act="friend"]').addEventListener("click", () => supabase.simulateFriendMessage());
   document.body.append(badge);
@@ -352,7 +354,16 @@ function renderBoard(rows) {
     stats.className = "stats";
     stats.innerHTML = `<b title="Current no-sugar streak">🔥 ${r.streak}</b><b title="No-sugar days">✅ ${r.clean_days}</b>`;
 
-    li.append(rank, av, who, stats);
+    let dm = document.createElement("span"); // keeps the grid aligned on your own row
+    if (!r.is_me && r.user_id) {
+      dm = Object.assign(document.createElement("button"), {
+        type: "button", className: "secondary board-dm", textContent: "💬", title: `Message ${r.name}`,
+      });
+      dm.setAttribute("aria-label", `Message ${r.name}`);
+      dm.addEventListener("click", () => chat.openDM({ id: r.user_id, name: r.name }));
+    }
+
+    li.append(rank, av, who, stats, dm);
     list.append(li);
   });
   $("board-empty").hidden = rows.length > 1;

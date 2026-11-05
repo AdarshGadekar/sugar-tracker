@@ -90,8 +90,14 @@ export function createMockClient() {
 
   // ---------- chat (messages table + fake Realtime) ----------
   const channels = new Set();
-  const broadcast = (event, row) => channels.forEach((ch) => ch.handlers
-    .filter((h) => h.event === event).forEach((h) => h.cb(event === "INSERT" ? { new: row } : { old: { id: row.id } })));
+  // Fake Realtime. For direct_messages it only delivers rows the signed-in user may see (like RLS).
+  const broadcast = (event, row, table = "messages") => {
+    if (table === "direct_messages" && ![row.sender_id, row.recipient_id].includes(currentId())) return;
+    channels.forEach((ch) => ch.handlers
+      .filter((h) => h.event === event && h.table === table)
+      .forEach((h) => h.cb(event === "INSERT" ? { new: row } : { old: { id: row.id } })));
+  };
+  const pg = (r) => ({ ...r, created_at: r.created_at.replace("T", " ").replace("Z", "000") });
   const nameOf = (uid) => Object.values(db.users).find((u) => u.id === uid)?.name || "Player";
 
   function postMessage(row) {
@@ -103,9 +109,20 @@ export function createMockClient() {
     save(db);
     // Realtime arrives a moment later, with Postgres-style timestamps ("2026-11-05 08:50:30.565000"),
     // exactly like the real thing — the app must cope with both formats.
-    const pgStyle = { ...m, created_at: m.created_at.replace("T", " ").replace("Z", "000") };
-    setTimeout(() => broadcast("INSERT", pgStyle), 120);
+    setTimeout(() => broadcast("INSERT", pg(m)), 120);
     return m;
+  }
+
+  // ---------- direct messages ----------
+  function postDm(row) {
+    db.dms ||= [];
+    db.nextDmId ||= 1;
+    const d = { id: db.nextDmId++, created_at: new Date().toISOString(), read_at: null, ...row };
+    db.dms.push(d);
+    db.dms = db.dms.slice(-500);
+    save(db);
+    setTimeout(() => broadcast("INSERT", pg(d), "direct_messages"), 120);
+    return d;
   }
 
   // thenable query builder: select().order().limit()
@@ -153,6 +170,39 @@ export function createMockClient() {
         }),
       };
     }
+    if (table === "direct_messages") {
+      return {
+        insert({ recipient_id, body }) {
+          const run = (async () => {
+            await wait(200);
+            const uid = currentId();
+            if (!uid) return { data: null, error: err("28000", "Not signed in") };
+            const text = String(body || "").trim();
+            if (!text || text.length > 500) return { data: null, error: err("23514", "Message must be 1–500 characters.") };
+            if (recipient_id === uid) return { data: null, error: err("P0001", "You can't message yourself.") };
+            if (!people().some((p) => p.id === recipient_id)) return { data: null, error: err("P0001", "That person isn't available.") };
+            const last = (db.dms || []).filter((d) => d.sender_id === uid).at(-1);
+            if (last && Date.now() - new Date(last.created_at) < 1000) {
+              return { data: null, error: err("P0001", "Slow down a little — one message per second.") };
+            }
+            return { data: postDm({ sender_id: uid, recipient_id, body: text }), error: null };
+          })();
+          const chain = { select: () => chain, single: () => run, then: (a, b) => run.then(a, b) };
+          return chain;
+        },
+        delete: () => ({
+          async eq(_col, id) {
+            await wait(150);
+            const d = (db.dms || []).find((x) => x.id === id);
+            if (!d || d.sender_id !== currentId()) return { error: err("42501", "permission denied") };
+            db.dms = db.dms.filter((x) => x.id !== id);
+            save(db);
+            broadcast("DELETE", d, "direct_messages");
+            return { error: null };
+          },
+        }),
+      };
+    }
     return {
       async select() {
         await wait(250);
@@ -165,7 +215,7 @@ export function createMockClient() {
 
   function channel() {
     const ch = { handlers: [],
-      on(_type, filter, cb) { ch.handlers.push({ event: filter.event, cb }); return ch; },
+      on(_type, filter, cb) { ch.handlers.push({ event: filter.event, table: filter.table, cb }); return ch; },
       subscribe() { channels.add(ch); return ch; } };
     return ch;
   }
@@ -174,11 +224,60 @@ export function createMockClient() {
   const FRIENDS = ["Asha", "Rohan", "Meera"];
   const LINES = ["Day 3 without sugar and I already feel lighter 😄", "Who else is craving chocolate right now? 🍫",
     "Pro tip: frozen grapes hit the sweet spot 🍇", "You've got this everyone 💪", "Skipped dessert at a wedding. Proud of me!"];
+  const friendId = (i) => "u-friend-" + i;
+  const rand = (n) => Math.floor(Math.random() * n);
   function simulateFriendMessage() {
-    postMessage({ user_id: "u-friend-" + Math.floor(Math.random() * 3), name: FRIENDS[Math.floor(Math.random() * 3)],
-      body: LINES[Math.floor(Math.random() * LINES.length)] });
+    const i = rand(3);
+    postMessage({ user_id: friendId(i), name: FRIENDS[i], body: LINES[rand(LINES.length)] });
+  }
+  const DM_LINES = ["Hey! How's your streak going? 🔥", "Want to do a no-sugar week together? 💪",
+    "I almost ate a whole cake yesterday 😅", "Proud of you, keep going! ❤️"];
+  function simulateFriendDm() {
+    const me = currentId();
+    if (!me) return;
+    postDm({ sender_id: friendId(rand(3)), recipient_id: me, body: DM_LINES[rand(DM_LINES.length)] });
   }
 
+  // Everyone you could DM: other confirmed mock users + fake friends who have talked to you.
+  function people() {
+    const me = currentId();
+    const real = Object.values(db.users).filter((u) => u.id !== me && Date.now() >= u.confirmAt)
+      .map((u) => ({ id: u.id, name: u.name || "Player" }));
+    const fake = FRIENDS.map((name, i) => ({ id: friendId(i), name }))
+      .filter((f) => (db.dms || []).some((d) => [d.sender_id, d.recipient_id].includes(f.id)
+        && [d.sender_id, d.recipient_id].includes(me)));
+    return [...real, ...fake];
+  }
+
+  function dmThreads() {
+    const me = currentId();
+    if (!me) return { data: null, error: err("28000", "Not signed in") };
+    const rows = people().map((p) => {
+      const pair = (db.dms || []).filter((d) => (d.sender_id === me && d.recipient_id === p.id)
+        || (d.sender_id === p.id && d.recipient_id === me));
+      const last = pair.at(-1);
+      return { user_id: p.id, name: p.name, last_body: last?.body ?? null, last_at: last?.created_at ?? null,
+        last_from_me: last ? last.sender_id === me : false,
+        unread: pair.filter((d) => d.recipient_id === me && !d.read_at).length };
+    });
+    rows.sort((a, b) => (b.last_at || "").localeCompare(a.last_at || "") || a.name.localeCompare(b.name));
+    return { data: rows, error: null };
+  }
+
+  function dmThread(other) {
+    const me = currentId();
+    if (!me) return { data: null, error: err("28000", "Not signed in") };
+    const pair = (db.dms || []).filter((d) => (d.sender_id === me && d.recipient_id === other)
+      || (d.sender_id === other && d.recipient_id === me));
+    return { data: pair.slice(-100), error: null };
+  }
+
+  function markDmRead(other) {
+    const me = currentId();
+    (db.dms || []).forEach((d) => { if (d.recipient_id === me && d.sender_id === other && !d.read_at) d.read_at = new Date().toISOString(); });
+    save(db);
+    return { data: null, error: null };
+  }
   function leaderboard() {
     const me = currentId();
     if (!me) return { data: null, error: err("28000", "Not signed in") };
@@ -195,6 +294,7 @@ export function createMockClient() {
           streak: currentStreak(marks, today),
           locked: sugar > MAX_SUGAR,
           is_me: u.id === me,
+          user_id: u.id,
         };
       })
       .sort((a, b) => a.locked - b.locked || b.streak - a.streak || b.clean_days - a.clean_days
@@ -205,6 +305,9 @@ export function createMockClient() {
   async function rpc(fn, { p_day, p_had_sugar } = {}) {
     await wait(350);
     if (fn === "leaderboard") return leaderboard();
+    if (fn === "dm_threads") return dmThreads();
+    if (fn === "dm_thread") return dmThread(arguments[1]?.p_other);
+    if (fn === "mark_dm_read") return markDmRead(arguments[1]?.p_other);
     if (fn !== "mark_day") return { data: null, error: err("PGRST202", "unknown function") };
     const uid = currentId();
     if (!uid) return { data: null, error: err("28000", "Not signed in") };
@@ -235,5 +338,5 @@ export function createMockClient() {
     return { data: { sugar_count: count, max_sugar: MAX_SUGAR, locked: count > MAX_SUGAR }, error: null };
   }
 
-  return { auth, from, rpc, channel, removeChannel, simulateFriendMessage };
+  return { auth, from, rpc, channel, removeChannel, simulateFriendMessage, simulateFriendDm };
 }

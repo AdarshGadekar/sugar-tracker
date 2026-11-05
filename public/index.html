@@ -130,13 +130,23 @@
   <!-- Group chat drawer -->
   <aside id="chat" class="chat" aria-label="Group chat" hidden>
     <header class="chat-head">
-      <div>
-        <strong>Group chat</strong>
-        <span class="muted small-text">Everyone on Desserted</span>
+      <button id="chat-back" class="secondary small" type="button" aria-label="Back to conversations" hidden>‹</button>
+      <div class="chat-title">
+        <strong id="chat-title">Group chat</strong>
+        <span id="chat-sub" class="muted small-text">Everyone on Desserted</span>
       </div>
       <button id="chat-close" class="secondary small" type="button" aria-label="Close chat">✕</button>
     </header>
+    <nav class="chat-tabs" role="tablist" aria-label="Chat type">
+      <button type="button" role="tab" data-tab="group" class="on" aria-selected="true">
+        Group<span id="tab-badge-group" class="tab-badge" hidden>0</span>
+      </button>
+      <button type="button" role="tab" data-tab="direct" aria-selected="false">
+        Direct<span id="tab-badge-direct" class="tab-badge" hidden>0</span>
+      </button>
+    </nav>
     <ol id="chat-list" class="chat-list" aria-live="polite"></ol>
+    <ul id="dm-threads" class="dm-threads" hidden></ul>
     <p id="chat-error" class="chat-error" role="alert" hidden></p>
     <div id="emoji-pop" class="emoji-pop" role="listbox" aria-label="Emojis" hidden></div>
     <form id="chat-form" class="chat-form">
