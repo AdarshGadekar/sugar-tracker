@@ -16,11 +16,11 @@
 
 ## Render (static site)
 1. Push this folder to a GitHub repo.
-2. Render â†’ New â†’ Blueprint â†’ pick the repo (uses `render.yaml`), or New â†’ Static Site with:
+2. Render → New → Blueprint → pick the repo (uses `render.yaml`), or New → Static Site with:
    - Build command: `node scripts/build-config.mjs`
    - Publish directory: `public`
 3. Set the two env vars from `.env`: `SUPABASE_URL`, `SUPABASE_ANON_KEY`.
-4. After the first deploy, in Supabase â†’ Authentication â†’ URL Configuration:
+4. After the first deploy, in Supabase → Authentication → URL Configuration:
    - Site URL = your Render URL (e.g. `https://sugar-tracker.onrender.com`)
    - Redirect URLs: add the Render URL and `http://localhost:5173`
    (Otherwise the sign-up confirmation email links to `localhost:3000`.)
@@ -28,7 +28,7 @@
 ## Notes
 - Supabase's built-in email sender is rate-limited (a few emails/hour). Fine for a handful of users;
   add custom SMTP in Supabase if more people sign up.
-- Unlock a locked user: delete some of their sugar rows in Table Editor â†’ `day_marks`.
+- Unlock a locked user: delete some of their sugar rows in Table Editor → `day_marks`.
 - Free Supabase projects pause after ~1 week of no activity; restore from the dashboard.
 
 ## Run locally
