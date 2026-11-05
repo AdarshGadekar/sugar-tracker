@@ -8,7 +8,9 @@
 // Sign up with any new email: it "confirms" itself 6 seconds later.
 // Sign up with an email containing "ratelimit" to see the rate-limit error.
 
-const KEY = "sugar_mock_v1";
+import { currentStreak } from "./calendar.js";
+
+const KEY = "sugar_mock_v2";
 const MAX_SUGAR = 3;
 const CONFIRM_AFTER_MS = 6000;
 
@@ -22,10 +24,17 @@ function seed() {
     users: {
       "test@sugar.test": { id: "u-test", password: "test1234", name: "Test User", confirmAt: 0 },
       "locked@sugar.test": { id: "u-locked", password: "test1234", name: "Locked Lucy", confirmAt: 0 },
+      // fake friends for the leaderboard (no password = can't sign in)
+      "asha@sugar.test": { id: "u-asha", password: null, name: "Asha", confirmAt: 0 },
+      "rohan@sugar.test": { id: "u-rohan", password: null, name: "Rohan", confirmAt: 0 },
+      "meera@sugar.test": { id: "u-meera", password: null, name: "Meera", confirmAt: 0 },
     },
     marks: {
       "u-test": { [daysAgo(6)]: false, [daysAgo(5)]: false, [daysAgo(4)]: true, [daysAgo(2)]: false },
       "u-locked": { [daysAgo(9)]: true, [daysAgo(7)]: true, [daysAgo(5)]: true, [daysAgo(3)]: true, [daysAgo(1)]: false },
+      "u-asha": Object.fromEntries([...Array(9).keys()].map((i) => [daysAgo(i), false])),
+      "u-rohan": { [daysAgo(8)]: true, [daysAgo(6)]: false, [daysAgo(5)]: true, [daysAgo(3)]: false, [daysAgo(2)]: false, [daysAgo(1)]: false },
+      "u-meera": { [daysAgo(4)]: false, [daysAgo(3)]: false, [daysAgo(2)]: true },
     },
     session: null,
   };
@@ -67,7 +76,7 @@ export function createMockClient() {
     async signInWithPassword({ email, password }) {
       await wait(450);
       const u = db.users[email];
-      if (!u || u.password !== password) return { data: {}, error: err("invalid_credentials", "Invalid login credentials") };
+      if (!u || !u.password || u.password !== password) return { data: {}, error: err("invalid_credentials", "Invalid login credentials") };
       if (Date.now() < u.confirmAt) return { data: {}, error: err("email_not_confirmed", "Email not confirmed") };
       db.session = email; save(db); emit("SIGNED_IN");
       return { data: { session: session() }, error: null };
@@ -101,8 +110,32 @@ export function createMockClient() {
     };
   }
 
+  function leaderboard() {
+    const me = currentId();
+    if (!me) return { data: null, error: err("28000", "Not signed in") };
+    const today = iso(new Date());
+    const rows = Object.values(db.users)
+      .filter((u) => Date.now() >= u.confirmAt)
+      .map((u) => {
+        const marks = db.marks[u.id] || {};
+        const sugar = Object.values(marks).filter(Boolean).length;
+        return {
+          name: u.name || "Player",
+          sugar_days: sugar,
+          clean_days: Object.values(marks).length - sugar,
+          streak: currentStreak(marks, today),
+          locked: sugar > MAX_SUGAR,
+          is_me: u.id === me,
+        };
+      })
+      .sort((a, b) => a.locked - b.locked || b.streak - a.streak || b.clean_days - a.clean_days
+        || a.sugar_days - b.sugar_days || a.name.localeCompare(b.name));
+    return { data: rows, error: null };
+  }
+
   async function rpc(fn, { p_day, p_had_sugar } = {}) {
     await wait(350);
+    if (fn === "leaderboard") return leaderboard();
     if (fn !== "mark_day") return { data: null, error: err("PGRST202", "unknown function") };
     const uid = currentId();
     if (!uid) return { data: null, error: err("28000", "Not signed in") };

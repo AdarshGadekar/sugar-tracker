@@ -1,8 +1,9 @@
 ﻿import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/+esm";
 import {
-  MAX_SUGAR, monthGrid, todayISO, sugarCount, isLocked, chancesLeft, canMark, formatDay,
+  MAX_SUGAR, monthGrid, todayISO, sugarCount, isLocked, chancesLeft, canMark, formatDay, currentStreak,
 } from "./calendar.js";
 import { mountSudoku } from "./sudoku.js";
+import { CLEAN, SLIP, LAST_LIFE, GAME_OVER, pick } from "./messages.js";
 
 mountSudoku(document.getElementById("sudoku"));
 
@@ -83,6 +84,28 @@ function toast(text, isError = false) {
     el.classList.add("hide");
     setTimeout(() => (el.hidden = true), 350);
   }, 3500);
+}
+
+/** Pop-up card with a fun fact / motivation that fades away on its own. */
+let factTimer;
+function showFact(title, message, tone) {
+  const el = $("fact");
+  $("fact-icon").textContent = message.icon;
+  $("fact-title").textContent = title;
+  $("fact-text").textContent = message.text;
+  el.className = `fact ${tone}`;
+  el.hidden = false;
+  replay(el, "show");
+  replay(el.querySelector(".fact-timer i"), "run");
+  clearTimeout(factTimer);
+  factTimer = setTimeout(hideFact, 7000);
+}
+function hideFact() {
+  const el = $("fact");
+  if (el.hidden) return;
+  clearTimeout(factTimer);
+  el.classList.add("hide");
+  setTimeout(() => (el.hidden = true), 450);
 }
 
 function ask(dialog) {
@@ -241,6 +264,7 @@ async function loadMarks(opts = {}) {
   if (error) return toast("Could not load your days: " + error.message, true);
   state.marks = Object.fromEntries(data.map((r) => [r.day, r.had_sugar]));
   render(opts);
+  loadBoard();
 }
 
 async function onDayClick(iso) {
@@ -270,9 +294,60 @@ async function onDayClick(iso) {
   }
   state.marks[iso] = hadSugar;
   render({ justMarked: iso });
-  if (data.locked) toast("Saved. You've had sugar more than 3 times — your tracker is now locked.", true);
-  else if (hadSugar) toast(`Saved: sugar day. ${data.sugar_count} of ${data.max_sugar} chances used.`);
-  else toast("Saved: no sugar. Nice work!");
+  loadBoard();
+
+  if (data.locked) {
+    showFact("Game over — tracker locked", pick(GAME_OVER), "bad");
+  } else if (hadSugar) {
+    const left = data.max_sugar - data.sugar_count;
+    showFact(`Sugar day saved · ${left} ${left === 1 ? "life" : "lives"} left`,
+      pick(left === 0 ? LAST_LIFE : SLIP), "bad");
+  } else {
+    const streak = currentStreak(state.marks, todayISO());
+    showFact(streak >= 2 ? `No sugar · ${streak}-day streak!` : "No sugar — saved!", pick(CLEAN), "good");
+  }
+}
+
+// ---------- Leaderboard ----------
+async function loadBoard() {
+  const { data, error } = await supabase.rpc("leaderboard");
+  const card = document.querySelector(".board");
+  if (error || !Array.isArray(data)) { card.hidden = true; return; } // function not deployed yet
+  card.hidden = false;
+  renderBoard(data);
+}
+
+function renderBoard(rows) {
+  const list = $("board-list");
+  list.replaceChildren();
+  rows.forEach((r, i) => {
+    const li = document.createElement("li");
+    li.className = "board-row" + (r.is_me ? " me" : "") + (r.locked ? " out" : "");
+    li.style.setProperty("--i", i);
+    const lives = Math.max(0, MAX_SUGAR - r.sugar_days);
+    const medal = r.locked ? "–" : ["🥇", "🥈", "🥉"][i] ?? String(i + 1);
+
+    const rank = Object.assign(document.createElement("span"), { className: "rank", textContent: medal });
+    const av = Object.assign(document.createElement("span"), { className: "avatar sm", textContent: (r.name || "?").charAt(0).toUpperCase() });
+    const who = document.createElement("span");
+    who.className = "who";
+    const nm = Object.assign(document.createElement("span"), { className: "nm", textContent: r.name });
+    const sub = Object.assign(document.createElement("span"), {
+      className: "sub",
+      textContent: r.locked ? "Game over" : "❤️".repeat(lives) + "🖤".repeat(MAX_SUGAR - lives),
+    });
+    who.append(nm, sub);
+    if (r.is_me) nm.append(Object.assign(document.createElement("em"), { textContent: " you" }));
+
+    const stats = document.createElement("span");
+    stats.className = "stats";
+    stats.innerHTML = `<b title="Current no-sugar streak">🔥 ${r.streak}</b><b title="No-sugar days">✅ ${r.clean_days}</b>`;
+
+    li.append(rank, av, who, stats);
+    list.append(li);
+  });
+  $("board-empty").hidden = rows.length > 1;
+  replay(list);
 }
 
 // ---------- Render ----------
@@ -313,6 +388,12 @@ function renderPlayer(used, locked) {
     replay($("chances"), "swap");
   }
   shownLives = lives;
+
+  const streak = currentStreak(state.marks, todayISO());
+  const s = $("streak");
+  const streakText = streak >= 1 ? `🔥 ${streak}-day no-sugar streak` : "";
+  if (s.textContent !== streakText) { s.textContent = streakText; if (streakText) replay(s, "swap"); }
+  s.hidden = !streakText || locked;
 }
 
 /**
@@ -383,7 +464,8 @@ $("verify-check").addEventListener("click", (e) => busy(e.currentTarget, "Checki
 $("verify-resend").addEventListener("click", resend);
 document.querySelectorAll("[data-go]").forEach((b) =>
   b.addEventListener("click", () => { pending = null; showScreen(b.dataset.go); }));
-$("signout").addEventListener("click", () => supabase.auth.signOut());
+$("signout").addEventListener("click", () => { hideFact(); supabase.auth.signOut(); });
+$("fact").addEventListener("click", hideFact);
 $("prev").addEventListener("click", () => changeMonth(-1));
 $("next").addEventListener("click", () => changeMonth(1));
 

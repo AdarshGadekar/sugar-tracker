@@ -1,8 +1,19 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  monthGrid, sugarCount, isLocked, chancesLeft, canMark, toISO,
+  monthGrid, sugarCount, isLocked, chancesLeft, canMark, toISO, currentStreak,
 } from "../public/calendar.js";
+
+test("currentStreak: counts back from today, or from yesterday if today is unmarked", () => {
+  const today = "2026-11-05";
+  assert.equal(currentStreak({}, today), 0);
+  assert.equal(currentStreak({ "2026-11-05": false, "2026-11-04": false, "2026-11-03": true }, today), 2);
+  assert.equal(currentStreak({ "2026-11-04": false, "2026-11-03": false }, today), 2);   // today not marked yet
+  assert.equal(currentStreak({ "2026-11-05": true, "2026-11-04": false }, today), 0);    // sugar today
+  assert.equal(currentStreak({ "2026-11-04": false, "2026-11-02": false }, today), 1);   // gap breaks it
+  assert.equal(currentStreak({ "2026-11-01": false, "2026-10-31": false, "2026-10-30": false, "2026-11-02": false,
+    "2026-11-03": false, "2026-11-04": false }, today), 6);                               // crosses month
+});
 
 test("monthGrid: Nov 2026 starts on Sunday, has 30 days, Monday-first", () => {
   const weeks = monthGrid(2026, 10);

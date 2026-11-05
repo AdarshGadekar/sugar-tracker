@@ -83,6 +83,7 @@
         <div id="player-name" class="player-name"></div>
         <div id="hearts" class="hearts" aria-live="polite"></div>
         <div id="chances" class="muted"></div>
+        <div id="streak" class="streak" hidden></div>
       </div>
       <div id="locked-banner" class="banner" hidden>
         Your tracker is locked — you had sugar more than 3 times. You can still view your history.
@@ -104,10 +105,29 @@
           <span><i class="dot open"></i> Not marked</span>
         </div>
       </div>
+
+      <div class="card board">
+        <div class="board-head">
+          <h2>How everyone's doing</h2>
+          <span class="muted small-text">🔥 streak · ✅ clean days</span>
+        </div>
+        <ol id="board-list" class="board-list"></ol>
+        <p id="board-empty" class="muted small-text" hidden>No one else here yet — invite a friend!</p>
+      </div>
     </section>
 
     <p id="toast" class="toast" role="status" hidden></p>
   </main>
+
+  <!-- Pop-up message after marking a day -->
+  <div id="fact" class="fact" role="status" aria-live="polite" hidden>
+    <div class="fact-icon" id="fact-icon"></div>
+    <div class="fact-body">
+      <strong id="fact-title"></strong>
+      <p id="fact-text"></p>
+    </div>
+    <div class="fact-timer"><i></i></div>
+  </div>
 
   <aside id="sudoku" class="sdk"></aside>
 

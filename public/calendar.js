@@ -42,6 +42,23 @@ export function canMark(iso, marks, today) {
   return iso <= today && !(iso in marks) && !isLocked(marks);
 }
 
+/**
+ * Consecutive no-sugar days ending today — or ending yesterday if today isn't marked yet.
+ * A sugar day or an unmarked day breaks the streak.
+ */
+export function currentStreak(marks, today) {
+  const [y, m, d] = today.split("-").map(Number);
+  const cursor = new Date(y, m - 1, d);
+  if (!(today in marks)) cursor.setDate(cursor.getDate() - 1);
+  let n = 0;
+  for (;;) {
+    const iso = toISO(cursor);
+    if (marks[iso] !== false) return n;
+    n++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+}
+
 export function formatDay(iso) {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString(undefined, {
