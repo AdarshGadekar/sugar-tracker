@@ -1,0 +1,11 @@
+services:
+  - type: web
+    runtime: static
+    name: sugar-tracker
+    buildCommand: node scripts/build-config.mjs
+    staticPublishPath: ./public
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false

@@ -1,0 +1,11 @@
+﻿{
+  "name": "sugar-tracker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "config": "node scripts/build-config.mjs",
+    "serve": "npx --yes serve public -l 5173"
+  }
+}
+

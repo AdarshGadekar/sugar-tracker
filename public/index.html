@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sugar Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <h1>Sugar Tracker</h1>
+      <button id="signout" class="link" hidden>Sign out</button>
+    </header>
+
+    <!-- Auth: one of four screens is visible at a time -->
+    <section id="auth-view" hidden>
+      <!-- Landing -->
+      <div class="card hero" data-screen="landing">
+        <div class="hero-hearts" aria-hidden="true">❤️ ❤️ ❤️</div>
+        <h2>Quit sugar, one day at a time</h2>
+        <p class="muted">Mark each day on a calendar: sugar or no sugar. You get <strong>3 lives</strong>.
+          Every sugar day breaks a heart — the 4th one is game over.</p>
+        <div class="stack">
+          <button data-go="signup">Create account</button>
+          <button data-go="signin" class="secondary">I already have an account</button>
+        </div>
+      </div>
+
+      <!-- Sign in -->
+      <form class="card" data-screen="signin" id="signin-form">
+        <button type="button" class="link back" data-go="landing">← Back</button>
+        <h2>Welcome back</h2>
+        <label>Email <input name="email" type="email" autocomplete="email" required /></label>
+        <label>Password <input name="password" type="password" autocomplete="current-password" required /></label>
+        <button type="submit" class="full">Sign in</button>
+        <p class="msg" role="status"></p>
+        <p class="switch muted">New here? <button type="button" class="link" data-go="signup">Create an account</button></p>
+      </form>
+
+      <!-- Sign up -->
+      <form class="card" data-screen="signup" id="signup-form">
+        <button type="button" class="link back" data-go="landing">← Back</button>
+        <h2>Create your account</h2>
+        <label>Name <input name="name" type="text" maxlength="30" autocomplete="nickname" required /></label>
+        <label>Email <input name="email" type="email" autocomplete="email" required /></label>
+        <label>Password <span class="muted">(min 6 characters)</span>
+          <input name="password" type="password" minlength="6" autocomplete="new-password" required /></label>
+        <button type="submit" class="full">Create account</button>
+        <p class="msg" role="status"></p>
+        <p class="switch muted">Already have an account? <button type="button" class="link" data-go="signin">Sign in</button></p>
+      </form>
+
+      <!-- Waiting for email confirmation -->
+      <div class="card verify" data-screen="verify">
+        <div class="spinner" aria-hidden="true"></div>
+        <h2>Check your inbox</h2>
+        <p>We sent a confirmation link to <strong id="verify-email"></strong>.</p>
+        <p class="muted">Open it to activate your account. This page is waiting and will continue
+          automatically once you confirm (you can confirm from your phone too).</p>
+        <div class="stack">
+          <button id="verify-check">I've confirmed — continue</button>
+          <button id="verify-resend" class="secondary">Resend email</button>
+          <button type="button" class="link" data-go="signin">Use a different account</button>
+        </div>
+        <p class="msg" role="status" id="verify-msg"></p>
+      </div>
+    </section>
+
+    <!-- App -->
+    <section id="app-view" hidden>
+      <div id="status" class="card player">
+        <div id="player-name" class="player-name"></div>
+        <div id="hearts" class="hearts" aria-live="polite"></div>
+        <div id="chances" class="muted"></div>
+      </div>
+      <div id="locked-banner" class="banner" hidden>
+        Your tracker is locked — you had sugar more than 3 times. You can still view your history.
+      </div>
+
+      <div class="card">
+        <div class="cal-nav">
+          <button id="prev" class="secondary" aria-label="Previous month">‹</button>
+          <h2 id="month-label"></h2>
+          <button id="next" class="secondary" aria-label="Next month">›</button>
+        </div>
+        <table class="cal">
+          <thead><tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr></thead>
+          <tbody id="cal-body"></tbody>
+        </table>
+        <div class="legend">
+          <span><i class="dot no"></i> No sugar</span>
+          <span><i class="dot yes"></i> Sugar</span>
+          <span><i class="dot open"></i> Not marked</span>
+        </div>
+      </div>
+    </section>
+
+    <p id="toast" class="toast" role="status" hidden></p>
+  </main>
+
+  <aside id="sudoku" class="sdk"></aside>
+
+  <!-- Step 1: choose -->
+  <dialog id="choose-dialog">
+    <form method="dialog">
+      <h3 id="choose-title"></h3>
+      <p class="muted">Did you have sugar this day?</p>
+      <div class="row">
+        <button value="no" class="good">No sugar</button>
+        <button value="yes" class="bad">Had sugar</button>
+      </div>
+      <button value="cancel" class="link">Cancel</button>
+    </form>
+  </dialog>
+
+  <!-- Step 2: confirm -->
+  <dialog id="confirm-dialog">
+    <form method="dialog">
+      <h3>Please confirm</h3>
+      <p id="confirm-text"></p>
+      <p id="confirm-warn" class="warn"></p>
+      <div class="row">
+        <button value="confirm" id="confirm-btn">Yes, save it</button>
+        <button value="cancel" class="secondary">Go back</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="config.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
