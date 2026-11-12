@@ -5,8 +5,10 @@ import {
 import { mountSudoku } from "./sudoku.js";
 import { CLEAN, SLIP, LAST_LIFE, GAME_OVER, TODAY_LINES, FUTURE_LINES, pick } from "./messages.js";
 import { createChat } from "./chat.js";
+import { mountDiwali, celebrate } from "./diwali.js";
 
 mountSudoku(document.getElementById("sudoku"));
+mountDiwali();
 
 const cfg = window.SUGAR_CONFIG || {};
 const $ = (id) => document.getElementById(id);
@@ -290,6 +292,7 @@ async function checkAnnouncement() {
     setTimeout(() => burst($("gift-icon")), 250);
     setTimeout(() => burst($("hearts")), 500);
     await new Promise((r) => dialog.addEventListener("close", r, { once: true }));
+    celebrate(); // light up the rangoli after "Thank you!"
   } finally {
     announcing = false;
   }

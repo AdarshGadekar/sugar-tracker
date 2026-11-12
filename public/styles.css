@@ -584,3 +584,63 @@ dialog .link { display: block; margin: 10px auto 0; }
   [data-theme="diwali"] .top::after, [data-theme="diwali"] .hero::before,
   [data-theme="diwali"] .brand-mark { animation: none; }
 }
+
+/* ============ Diwali celebration (diwali.js) ============ */
+.diwali-show {
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; overflow: hidden;
+  background: radial-gradient(circle at 50% 50%, rgb(40 14 4 / .78), rgb(10 4 16 / .7) 60%, rgb(10 4 16 / .55));
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  animation: fade .5s var(--ease) both;
+}
+.diwali-show.out { animation: diwali-out .6s var(--ease) forwards; }
+@keyframes diwali-out { to { opacity: 0; transform: scale(1.04); } }
+.diwali-show > * { grid-area: 1 / 1; }
+
+.diwali-rangoli { width: min(92vmin, 640px); height: auto; overflow: visible;
+  filter: drop-shadow(0 0 3px #ffcf5a) drop-shadow(0 0 10px rgb(255 170 40 / .6)); }
+.diwali-draw { fill: none; stroke: #fff; stroke-width: 16; stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: diwali-draw 1.1s var(--ease) forwards; }
+@keyframes diwali-draw { to { stroke-dashoffset: 0; } }
+.diwali-lights > * { fill: none; stroke: #ffd56a; stroke-width: 3.6; stroke-linecap: round; stroke-dasharray: 0 9;
+  animation: diwali-chase 1.4s linear infinite; }
+.diwali-lights.alt > * { stroke: #ff8f3c; stroke-dashoffset: -4.5; animation: diwali-chase 1.4s linear infinite reverse; }
+.diwali-lights.alt { animation: twinkle .9s ease-in-out infinite alternate; }
+@keyframes diwali-chase { to { stroke-dashoffset: -18; } }
+
+.diwali-diya { position: relative; display: grid; place-items: center; animation: diwali-rise .9s var(--spring) .15s both; }
+.diwali-lamp { position: relative; font-size: clamp(4.2rem, 15vmin, 7.5rem); line-height: 1;
+  filter: drop-shadow(0 0 14px rgb(255 190 60 / .9)); animation: flicker 2.2s ease-in-out infinite; }
+.diwali-glow { position: absolute; width: 240%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 200 80 / .55), rgb(255 140 30 / .18) 45%, transparent 70%);
+  animation: diwali-pulse 2.4s ease-in-out infinite; }
+@keyframes diwali-rise { from { opacity: 0; transform: translateY(30px) scale(.6); } to { opacity: 1; transform: none; } }
+@keyframes diwali-pulse { 50% { transform: scale(1.15); opacity: .8; } }
+
+.diwali-sparks { position: relative; width: 0; height: 0; }
+.diwali-sparks i { position: absolute; width: 5px; height: 5px; margin: -2.5px; border-radius: 50%; opacity: 0;
+  background: #ffe08a; box-shadow: 0 0 8px 2px rgb(255 190 60 / .8);
+  animation: diwali-spark var(--t) var(--ease) infinite; }
+@keyframes diwali-spark {
+  0% { transform: translate(0, 0) scale(.4); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(var(--x), var(--y)) scale(1); opacity: 0; }
+}
+
+.diwali-greet { align-self: end; margin: 0 0 9vh; font-size: clamp(1.3rem, 4.5vmin, 2rem); font-weight: 700;
+  letter-spacing: -.02em; color: #ffe2a0; text-shadow: 0 0 18px rgb(255 170 40 / .8);
+  animation: rise .9s var(--ease) 1.4s both; }
+.diwali-close { justify-self: end; align-self: start; margin: 16px; width: 40px; height: 40px; padding: 0;
+  background: rgb(255 255 255 / .12) !important; color: #fff; font-size: 1rem; }
+
+/* Little diya button that replays it */
+.diwali-btn { position: fixed; left: 50%; bottom: 12px; z-index: 10; width: 52px; height: 52px; padding: 0;
+  transform: translateX(-50%); border-radius: 50%; font-size: 1.6rem; line-height: 1;
+  background: radial-gradient(circle at 50% 40%, #4a1d5e, #22102e) !important;
+  border: 2px solid #ffd56a; box-shadow: 0 0 0 4px rgb(255 213 106 / .15), 0 0 22px rgb(255 170 40 / .55); }
+.diwali-btn:not(:disabled):hover { transform: translateX(-50%) scale(1.08); box-shadow: 0 0 0 6px rgb(255 213 106 / .2), 0 0 30px rgb(255 170 40 / .8); }
+.diwali-btn:not(:disabled):active { transform: translateX(-50%) scale(.94); }
+
+@media (prefers-reduced-motion: reduce) {
+  .diwali-lights > *, .diwali-lights.alt, .diwali-lamp, .diwali-glow, .diwali-sparks i { animation: none; }
+  .diwali-draw { animation-duration: .01s; animation-delay: 0s !important; }
+}
