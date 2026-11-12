@@ -674,4 +674,10 @@ dialog .link { display: block; margin: 10px auto 0; }
 .lantern .l-fold { stroke: rgb(0 0 0 / .18); stroke-width: 1; fill: none; }
 .lantern .l-thread { stroke-width: 1.2; fill: none; }
 @keyframes lantern-flicker { 0%, 100% { opacity: .75; } 40% { opacity: 1; } 70% { opacity: .85; } }
-@media (max-width: 1299px) { .lantern { display: none; } }
+/* Narrower screens: smaller lanterns at the very edges, behind the cards so they never cover anything */
+@media (max-width: 1299px) {
+  .lantern { z-index: 0; }
+  .lantern.left { left: 4px; } .lantern.right { right: 4px; }
+  .lantern svg { width: 82px; height: auto; }
+}
+@media (max-width: 700px) { .lantern { display: none; } } /* phones: no side room at all */
