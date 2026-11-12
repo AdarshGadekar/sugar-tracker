@@ -408,6 +408,7 @@ dialog .link { display: block; margin: 10px auto 0; }
 .chat-head button { width: 34px; height: 34px; padding: 0; }
 .chat-list { flex: 1; overflow-y: auto; list-style: none; margin: 0; padding: 12px 14px; display: flex;
   flex-direction: column; gap: 4px; overscroll-behavior: contain; }
+.chat-list > * { flex-shrink: 0; } /* never squash long messages when the list overflows */
 .msg { display: flex; gap: 8px; align-items: flex-end; max-width: 85%; }
 .msg.grouped { padding-left: 34px; }
 .msg.mine { align-self: flex-end; flex-direction: row-reverse; }

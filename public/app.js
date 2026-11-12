@@ -280,6 +280,7 @@ async function checkAnnouncement() {
     const a = Array.isArray(data) ? data[0] : null;
     if (error || !a) return;
     await supabase.rpc("ack_announcement", { p_id: a.id }); // seen once = never again
+    loadMarks(); // an announcement can come with changed hearts (e.g. a gift): show them fresh
     $("gift-icon").textContent = a.icon || "🎁";
     $("gift-title").textContent = a.title;
     $("gift-text").textContent = a.body;
@@ -293,8 +294,9 @@ async function checkAnnouncement() {
     announcing = false;
   }
 }
+// Coming back to the tab: refresh my days (hearts may have changed, e.g. a gift) and check for news.
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && state.user) checkAnnouncement();
+  if (document.visibilityState === "visible" && state.user && !state.busy) loadMarks();
 });
 
 async function onDayClick(iso) {
