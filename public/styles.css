@@ -547,10 +547,20 @@ dialog .link { display: block; margin: 10px auto 0; }
   background:
     radial-gradient(circle at 8px 6px, #fbbf24 0 3px, transparent 4px) 0 0 / 32px 12px repeat-x,
     radial-gradient(circle at 24px 6px, #f472b6 0 3px, transparent 4px) 0 0 / 32px 12px repeat-x;
-  filter: drop-shadow(0 0 4px rgb(251 191 36 / .8));
-  animation: lights 1.8s steps(2, jump-none) infinite;
+  opacity: .4;  /* resting bulbs; the ::before layer lights them up one after another */
 }
-@keyframes lights { from { opacity: .55; } to { opacity: 1; } }
+[data-theme="diwali"] .top::before {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -7px; height: 12px; pointer-events: none; z-index: 1;
+  background:
+    radial-gradient(circle at 8px 6px, #ffe08a 0 3.4px, transparent 4.4px) 0 0 / 32px 12px repeat-x,
+    radial-gradient(circle at 24px 6px, #ff8cc6 0 3.4px, transparent 4.4px) 0 0 / 32px 12px repeat-x;
+  filter: drop-shadow(0 0 3px #ffd56a) drop-shadow(0 0 8px rgb(251 191 36 / .9));
+  /* show every 4th bulb, then step the window one bulb (16px) along: a marquee chase */
+  -webkit-mask: repeating-linear-gradient(90deg, #000 0 16px, transparent 16px 64px) 0 0 / 64px 100%;
+          mask: repeating-linear-gradient(90deg, #000 0 16px, transparent 16px 64px) 0 0 / 64px 100%;
+  animation: lights-chase 1s steps(4) infinite;
+}
+@keyframes lights-chase { to { -webkit-mask-position: 64px 0; mask-position: 64px 0; } }
 
 /* Slowly turning rangoli behind the landing hearts */
 [data-theme="diwali"] .hero { position: relative; overflow: hidden; }
@@ -581,7 +591,7 @@ dialog .link { display: block; margin: 10px auto 0; }
 
 @media (prefers-reduced-motion: reduce) {
   [data-theme="diwali"] .ambient::before, [data-theme="diwali"] .ambient::after,
-  [data-theme="diwali"] .top::after, [data-theme="diwali"] .hero::before,
+  [data-theme="diwali"] .top::before, [data-theme="diwali"] .hero::before, .lantern,
   [data-theme="diwali"] .brand-mark { animation: none; }
 }
 
@@ -604,7 +614,11 @@ dialog .link { display: block; margin: 10px auto 0; }
 .diwali-lights > * { fill: none; stroke: #ffd56a; stroke-width: 3.6; stroke-linecap: round; stroke-dasharray: 0 9;
   animation: diwali-chase 1.4s linear infinite; }
 .diwali-lights.alt > * { stroke: #ff8f3c; stroke-dashoffset: -4.5; animation: diwali-chase 1.4s linear infinite reverse; }
-.diwali-lights.alt { animation: twinkle .9s ease-in-out infinite alternate; }
+.diwali-lights.alt { opacity: .55; }
+/* the gold strings brighten one after another, sweeping round the rangoli (--w = position on the circle) */
+.diwali-lights:not(.alt) > * { animation: diwali-chase 1.4s linear infinite, diwali-wave 1.6s ease-in-out infinite;
+  animation-delay: 0s, var(--w, 0s); }
+@keyframes diwali-wave { 0%, 100% { opacity: .3; } 45% { opacity: 1; } }
 @keyframes diwali-chase { to { stroke-dashoffset: -18; } }
 
 .diwali-diya { position: relative; display: grid; place-items: center; animation: diwali-rise .9s var(--spring) .15s both; }
@@ -644,3 +658,20 @@ dialog .link { display: block; margin: 10px auto 0; }
   .diwali-lights > *, .diwali-lights.alt, .diwali-lamp, .diwali-glow, .diwali-sparks i { animation: none; }
   .diwali-draw { animation-duration: .01s; animation-delay: 0s !important; }
 }
+
+/* Hanging paper lanterns on both sides (diwali.js). Only where there's room beside the content. */
+.lantern { position: fixed; top: 50px; z-index: 2; pointer-events: none; transform-origin: 50% 0;
+  animation: lantern-sway 4.5s ease-in-out infinite; filter: drop-shadow(0 8px 18px rgb(0 0 0 / .35)); }
+.lantern.left { left: calc((100vw - 1080px) / 4 - 65px); }
+.lantern.right { right: calc((100vw - 1080px) / 4 - 65px); animation-delay: -2.2s; animation-duration: 5.2s; }
+@keyframes lantern-sway { 0%, 100% { transform: rotate(3deg); } 50% { transform: rotate(-3deg); } }
+.lantern .l-cord { stroke: #e8c46a; stroke-width: 1.4; }
+.lantern .l-cap { filter: brightness(.75); }
+.lantern .l-panel { opacity: .92; }
+.lantern .l-light { fill: rgb(255 230 160 / .16); animation: lantern-flicker 2.8s ease-in-out infinite; }
+.lantern .l-rim { fill: #fff1c2; filter: drop-shadow(0 0 6px #ffd56a); }
+.lantern .l-glow { animation: lantern-flicker 2.8s ease-in-out infinite; }
+.lantern .l-fold { stroke: rgb(0 0 0 / .18); stroke-width: 1; fill: none; }
+.lantern .l-thread { stroke-width: 1.2; fill: none; }
+@keyframes lantern-flicker { 0%, 100% { opacity: .75; } 40% { opacity: 1; } 70% { opacity: .85; } }
+@media (max-width: 1299px) { .lantern { display: none; } }
