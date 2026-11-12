@@ -53,3 +53,11 @@ test("canMark: past days only (not today, not future), no re-mark, nothing when 
   const locked = { a: true, b: true, c: true, d: true };
   assert.equal(canMark("2026-11-04", locked, today), false);
 });
+
+test("forgiven (gift) sugar days don't cost a heart", () => {
+  const m = { "2026-11-01": true, "2026-11-02": "gift", "2026-11-03": "gift", "2026-11-04": false };
+  assert.equal(sugarCount(m), 1);
+  assert.equal(chancesLeft(m), 2);
+  assert.equal(isLocked({ a: "gift", b: "gift", c: "gift", d: "gift" }), false);
+  assert.equal(currentStreak({ "2026-11-04": false, "2026-11-03": "gift" }, "2026-11-05"), 1); // still breaks a streak
+});

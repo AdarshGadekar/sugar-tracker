@@ -25,8 +25,11 @@ export function monthGrid(year, month) {
   return weeks;
 }
 
+/** Mark values: true = sugar, false = no sugar, "gift" = sugar day that was forgiven (costs no heart). */
+export const GIFT = "gift";
+
 export function sugarCount(marks) {
-  return Object.values(marks).filter(Boolean).length;
+  return Object.values(marks).filter((v) => v === true).length;
 }
 
 export function isLocked(marks) {

@@ -1,19 +1,19 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="diwali">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
   <title>Desserted · 3 lives, 0 desserts</title>
   <meta name="description" content="Desserted — a tiny game for quitting sugar with friends. 3 lives, 0 desserts." />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍰</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="ambient" aria-hidden="true"><span></span><span></span><span></span></div>
   <header class="top">
     <div class="top-inner">
-      <h1 class="brand"><span class="brand-mark" aria-hidden="true">🍰</span>Desserted</h1>
+      <h1 class="brand"><span class="brand-mark" aria-hidden="true">🪔</span>Desserted</h1>
       <div class="account" id="account" hidden>
         <button id="chat-toggle" class="secondary small chat-toggle" type="button" aria-expanded="false" aria-controls="chat">
           💬 Chat<span id="chat-badge" class="chat-badge" hidden>0</span>
@@ -32,14 +32,14 @@
         <div class="hero-hearts" aria-hidden="true">
           <span style="--i:0">❤️</span><span style="--i:1">❤️</span><span style="--i:2">❤️</span>
         </div>
-        <p class="eyebrow">Desserted · 3 lives, 0 desserts</p>
+        <p class="eyebrow">Happy Diwali · 3 lives, 0 desserts</p>
         <h2 class="headline">Quit sugar.<br /><span class="grad">One day at a time.</span></h2>
         <p class="muted">Mark each day on a calendar: sugar or no sugar. You get <strong>3 lives</strong>.
           Every sugar day breaks a heart — the 4th one is game over.<br />Don't get desserted.</p>
         <div class="stack">
-          <button data-go="signup">Create account</button>
-          <button data-go="signin" class="secondary">I already have an account</button>
+          <button data-go="signin">Sign in</button>
         </div>
+        <p class="invite muted">🔒 Invite only — ask Adarsh to add you.</p>
       </div>
 
       <!-- Sign in -->
@@ -50,20 +50,7 @@
         <label>Password <input name="password" type="password" autocomplete="current-password" required /></label>
         <button type="submit" class="full">Sign in</button>
         <p class="msg" role="status"></p>
-        <p class="switch muted">New here? <button type="button" class="link" data-go="signup">Create an account</button></p>
-      </form>
-
-      <!-- Sign up -->
-      <form class="card" data-screen="signup" id="signup-form">
-        <button type="button" class="link back" data-go="landing">← Back</button>
-        <h2>Create your account</h2>
-        <label>Name <input name="name" type="text" maxlength="30" autocomplete="nickname" required /></label>
-        <label>Email <input name="email" type="email" autocomplete="email" required /></label>
-        <label>Password <span class="muted">(min 6 characters)</span>
-          <input name="password" type="password" minlength="6" autocomplete="new-password" required /></label>
-        <button type="submit" class="full">Create account</button>
-        <p class="msg" role="status"></p>
-        <p class="switch muted">Already have an account? <button type="button" class="link" data-go="signin">Sign in</button></p>
+        <p class="switch muted">No account? It's invite only — ask Adarsh.</p>
       </form>
 
       <!-- Waiting for email confirmation -->
@@ -191,6 +178,17 @@
         <button value="cancel" class="secondary">Go back</button>
         <button value="confirm" id="confirm-btn">Yes, save it</button>
       </div>
+    </form>
+  </dialog>
+
+  <!-- One-time announcement (e.g. Diwali gift) -->
+  <dialog id="gift-dialog" class="gift-dialog">
+    <form method="dialog">
+      <div class="gift-icon" id="gift-icon" aria-hidden="true">🎁</div>
+      <h3 id="gift-title"></h3>
+      <div class="gift-hearts" aria-label="3 of 3 lives"><span style="--i:0">❤️</span><span style="--i:1">❤️</span><span style="--i:2">❤️</span></div>
+      <p id="gift-text"></p>
+      <button value="ok" class="full">Thank you! ✨</button>
     </form>
   </dialog>
 

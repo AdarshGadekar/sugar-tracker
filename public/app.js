@@ -1,6 +1,6 @@
 ﻿import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/+esm";
 import {
-  MAX_SUGAR, monthGrid, todayISO, sugarCount, isLocked, chancesLeft, canMark, formatDay, currentStreak,
+  MAX_SUGAR, GIFT, monthGrid, todayISO, sugarCount, isLocked, chancesLeft, canMark, formatDay, currentStreak,
 } from "./calendar.js";
 import { mountSudoku } from "./sudoku.js";
 import { CLEAN, SLIP, LAST_LIFE, GAME_OVER, TODAY_LINES, FUTURE_LINES, pick } from "./messages.js";
@@ -32,7 +32,9 @@ if (useMock) {
   badge.innerHTML = 'Mock mode <button class="link" type="button" data-act="friend">friend message</button>'
     + '<button class="link" type="button" data-act="dm">friend DM</button>'
     + '<button class="link" type="button" data-act="live">live: on</button>'
+    + '<button class="link" type="button" data-act="gift">gift</button>'
     + '<button class="link" type="button" data-act="reset">reset data</button>';
+  badge.querySelector('[data-act="gift"]').addEventListener("click", () => { supabase.simulateGift(); location.reload(); });
   let liveOn = true;
   badge.querySelector('[data-act="live"]').addEventListener("click", (e) => {
     liveOn = !liveOn;
@@ -187,23 +189,6 @@ async function signIn(e) {
   setMsg(form, error.message === "Invalid login credentials" ? "Wrong email or password." : friendly(error));
 }
 
-async function signUp(e) {
-  e.preventDefault();
-  const form = e.currentTarget;
-  const email = form.email.value.trim(), password = form.password.value;
-  const { data, error } = await busy(form.querySelector("[type=submit]"), "Creating account…",
-    () => supabase.auth.signUp({
-      email, password,
-      options: { emailRedirectTo: redirectTo, data: { name: form.name.value.trim() } },
-    }));
-  if (error) return setMsg(form, friendly(error));
-  if (data.session) return; // email confirmation is off: already signed in
-  if (data.user && data.user.identities?.length === 0) {
-    return setMsg(form, "An account with this email already exists. Sign in instead.");
-  }
-  startVerify(email, password);
-}
-
 // ----- Waiting for the confirmation link -----
 function startVerify(email, password) {
   pending = { email, password };
@@ -277,12 +262,40 @@ function showView() {
 
 // ---------- Data ----------
 async function loadMarks(opts = {}) {
-  const { data, error } = await supabase.from("day_marks").select("day, had_sugar");
+  const { data, error } = await supabase.from("day_marks").select("day, had_sugar, forgiven");
   if (error) return toast("Could not load your days: " + error.message, true);
-  state.marks = Object.fromEntries(data.map((r) => [r.day, r.had_sugar]));
+  state.marks = Object.fromEntries(data.map((r) => [r.day, r.had_sugar ? (r.forgiven ? GIFT : true) : false]));
   render(opts);
   loadBoard();
+  checkAnnouncement();
 }
+
+// ---------- One-time announcements (e.g. the Diwali gift) ----------
+let announcing = false;
+async function checkAnnouncement() {
+  if (announcing || !state.user) return;
+  announcing = true;
+  try {
+    const { data, error } = await supabase.rpc("next_announcement");
+    const a = Array.isArray(data) ? data[0] : null;
+    if (error || !a) return;
+    await supabase.rpc("ack_announcement", { p_id: a.id }); // seen once = never again
+    $("gift-icon").textContent = a.icon || "🎁";
+    $("gift-title").textContent = a.title;
+    $("gift-text").textContent = a.body;
+    hideFact();
+    const dialog = $("gift-dialog");
+    dialog.showModal();
+    setTimeout(() => burst($("gift-icon")), 250);
+    setTimeout(() => burst($("hearts")), 500);
+    await new Promise((r) => dialog.addEventListener("close", r, { once: true }));
+  } finally {
+    announcing = false;
+  }
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && state.user) checkAnnouncement();
+});
 
 async function onDayClick(iso) {
   if (state.busy || !canMark(iso, state.marks, todayISO())) return;
@@ -458,8 +471,9 @@ function render(opts = {}) {
         const num = Object.assign(document.createElement("span"), { className: "num", textContent: Number(iso.slice(8)) });
         b.append(num);
         if (iso in state.marks) {
-          b.classList.add(state.marks[iso] ? "yes" : "no");
-          b.append(Object.assign(document.createElement("span"), { className: "tick", textContent: state.marks[iso] ? "✕" : "✓" }));
+          const v = state.marks[iso];
+          b.classList.add(v === GIFT ? "gift" : v ? "yes" : "no");
+          b.append(Object.assign(document.createElement("span"), { className: "tick", textContent: v === GIFT ? "🎁" : v ? "✕" : "✓" }));
         }
         if (isToday) {
           b.classList.add("today");
@@ -478,7 +492,8 @@ function render(opts = {}) {
           b.addEventListener("mouseleave", hideBubble);
         } else {
           b.disabled = !canMark(iso, state.marks, today);
-          b.title = iso in state.marks ? (state.marks[iso] ? "Had sugar" : "No sugar")
+          b.title = iso in state.marks
+            ? (state.marks[iso] === GIFT ? "Had sugar — forgiven (Diwali gift 🎁)" : state.marks[iso] ? "Had sugar" : "No sugar")
             : locked ? "Locked" : "Click to mark";
           b.addEventListener("click", () => onDayClick(iso));
         }
@@ -533,7 +548,6 @@ function changeMonth(dir) {
 
 // ---------- Wire up ----------
 $("signin-form").addEventListener("submit", signIn);
-$("signup-form").addEventListener("submit", signUp);
 $("verify-check").addEventListener("click", (e) => busy(e.currentTarget, "Checking…", () => checkConfirmed(true)));
 $("verify-resend").addEventListener("click", resend);
 document.querySelectorAll("[data-go]").forEach((b) =>

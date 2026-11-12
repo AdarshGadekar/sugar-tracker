@@ -138,6 +138,7 @@ button.loading::after {
 .hero p.muted { max-width: 34ch; margin: 0 auto; }
 form.card h2, .verify h2 { margin: 0 0 16px; font-size: 1.5rem; letter-spacing: -.02em; }
 .switch { text-align: center; font-size: .9rem; margin: 12px 0 0; }
+.hero p.invite { font-size: .85rem; margin-top: 14px; }
 .switch .link { padding: 0; }
 .verify { text-align: center; }
 .spinner { width: 40px; height: 40px; margin: 6px auto 14px; border-radius: 50%;
@@ -179,6 +180,7 @@ form.card h2, .verify h2 { margin: 0 0 16px; font-size: 1.5rem; letter-spacing: 
 .day:not(:disabled):not(.nope):hover { transform: scale(1.08); border-color: var(--accent); box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 25%, transparent); }
 .day.no { background: var(--good-bg); border-color: var(--good); color: var(--good); font-weight: 600; }
 .day.yes { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); font-weight: 600; }
+.day.gift { background: color-mix(in srgb, #f5a623 14%, transparent); border-color: #f5a623; color: #f5a623; font-weight: 600; }
 .day.today { box-shadow: 0 0 0 2px var(--accent); }
 .day:disabled { cursor: default; opacity: 1; }
 .day.future { color: var(--muted); opacity: .4; }
@@ -209,6 +211,13 @@ dialog::backdrop { background: rgb(0 0 0 / .35); backdrop-filter: blur(8px); -we
 dialog h3 { margin: 0 0 6px; font-size: 1.25rem; letter-spacing: -.02em; }
 dialog .link { display: block; margin: 10px auto 0; }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(16px) scale(.94); } to { opacity: 1; transform: none; } }
+.gift-dialog { text-align: center; border-color: color-mix(in srgb, #f5a623 55%, transparent);
+  box-shadow: 0 30px 80px rgb(0 0 0 / .3), 0 0 60px color-mix(in srgb, #f5a623 25%, transparent); }
+.gift-icon { font-size: 3.2rem; line-height: 1; margin-bottom: 8px; animation: icon-pop .8s var(--spring) .1s both; }
+.gift-hearts { font-size: 1.8rem; display: flex; justify-content: center; gap: 10px; margin: 6px 0 4px; }
+.gift-hearts span { display: inline-block; animation: pop .6s var(--spring) both, beat 2.4s var(--ease) 1s infinite;
+  animation-delay: calc(.35s + var(--i) * .18s), calc(1s + var(--i) * .25s); }
+.gift-dialog p { color: var(--muted); margin: 8px 0 18px; }
 @keyframes fade { from { opacity: 0; } }
 .warn { color: var(--bad); font-weight: 600; }
 .warn:empty { display: none; }
@@ -474,4 +483,103 @@ dialog .link { display: block; margin: 10px auto 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .ambient { display: none; }
+}
+
+/* ===================================================================
+   Diwali theme — on while <html data-theme="diwali">. Remove the
+   attribute in index.html to go back to the regular look.
+   =================================================================== */
+:root[data-theme="diwali"] {
+  --bg: #fff7ec; --card: rgb(255 251 245 / .78); --card-solid: #fffaf3;
+  --text: #2a1408; --muted: #7a5a45; --line: rgb(120 60 10 / .14);
+  --accent: #c2410c; --accent-2: #be185d; --accent-3: #d97706;
+  --shadow: 0 1px 2px rgb(120 50 0 / .06), 0 12px 40px rgb(194 65 12 / .12);
+  --glow: #f59e0b;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="diwali"] {
+    --bg: #12081c; --card: rgb(34 18 46 / .74); --card-solid: #22122e;
+    --text: #fff3e0; --muted: #c9ae95; --line: rgb(255 200 120 / .14);
+    --accent: #fbbf24; --accent-2: #f472b6; --accent-3: #fb923c;
+    --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 12px 40px rgb(0 0 0 / .55), 0 0 0 1px rgb(251 191 36 / .04);
+    --glow: #fbbf24;
+  }
+}
+
+/* Primary buttons: saffron → rani pink, readable white text in both modes */
+/* zero-specificity on purpose: any component that styles its own buttons (.day, tabs, emoji…) still wins */
+:where([data-theme="diwali"]) button:where(:not(.secondary, .link, .good, .bad)) {
+  background: linear-gradient(135deg, #c2410c, #be185d);
+}
+[data-theme="diwali"] .avatar { background: linear-gradient(135deg, #ea580c, #be185d); }
+
+/* Warm festival glows instead of blue/purple */
+[data-theme="diwali"] .ambient span:nth-child(1) { background: #f59e0b; }
+[data-theme="diwali"] .ambient span:nth-child(2) { background: #db2777; }
+[data-theme="diwali"] .ambient span:nth-child(3) { background: #ea580c; }
+
+/* Twinkling diya lights scattered across the night */
+[data-theme="diwali"] .ambient::before,
+[data-theme="diwali"] .ambient::after {
+  content: ""; position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 8% 22%, var(--glow) 0 1.6px, transparent 2.6px),
+    radial-gradient(circle at 23% 68%, #fb7185 0 1.4px, transparent 2.4px),
+    radial-gradient(circle at 37% 12%, var(--glow) 0 1.2px, transparent 2.2px),
+    radial-gradient(circle at 52% 84%, #fdba74 0 1.6px, transparent 2.6px),
+    radial-gradient(circle at 66% 30%, var(--glow) 0 1.3px, transparent 2.3px),
+    radial-gradient(circle at 81% 58%, #f472b6 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 93% 16%, var(--glow) 0 1.2px, transparent 2.2px),
+    radial-gradient(circle at 14% 90%, #fdba74 0 1.3px, transparent 2.3px),
+    radial-gradient(circle at 88% 92%, var(--glow) 0 1.6px, transparent 2.6px);
+  filter: drop-shadow(0 0 4px var(--glow));
+  animation: twinkle 3.2s ease-in-out infinite alternate;
+}
+[data-theme="diwali"] .ambient::after {
+  transform: translate(11vw, 9vh) rotate(8deg); animation-delay: -1.6s; animation-duration: 4.1s;
+}
+@keyframes twinkle { from { opacity: .25; } to { opacity: .95; } }
+
+/* String of festive lights hanging under the header */
+[data-theme="diwali"] .top::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -7px; height: 12px; pointer-events: none;
+  background:
+    radial-gradient(circle at 8px 6px, #fbbf24 0 3px, transparent 4px) 0 0 / 32px 12px repeat-x,
+    radial-gradient(circle at 24px 6px, #f472b6 0 3px, transparent 4px) 0 0 / 32px 12px repeat-x;
+  filter: drop-shadow(0 0 4px rgb(251 191 36 / .8));
+  animation: lights 1.8s steps(2, jump-none) infinite;
+}
+@keyframes lights { from { opacity: .55; } to { opacity: 1; } }
+
+/* Slowly turning rangoli behind the landing hearts */
+[data-theme="diwali"] .hero { position: relative; overflow: hidden; }
+[data-theme="diwali"] .hero > * { position: relative; }
+[data-theme="diwali"] .hero::before {
+  content: ""; position: absolute; width: 300px; height: 300px; left: 50%; top: -110px; margin-left: -150px;
+  border-radius: 50%; opacity: .35; pointer-events: none;
+  background:
+    repeating-conic-gradient(from 0deg, #f59e0b 0 9deg, transparent 9deg 18deg),
+    repeating-conic-gradient(from 9deg, #db2777 0 6deg, transparent 6deg 18deg);
+  -webkit-mask: radial-gradient(circle, transparent 0 22%, #000 23% 30%, transparent 31% 40%, #000 41% 50%, transparent 51% 60%, #000 61% 64%, transparent 65%);
+          mask: radial-gradient(circle, transparent 0 22%, #000 23% 30%, transparent 31% 40%, #000 41% 50%, transparent 51% 60%, #000 61% 64%, transparent 65%);
+  animation: rangoli 60s linear infinite;
+}
+@keyframes rangoli { to { transform: rotate(360deg); } }
+
+/* Diya logo flickers like a flame */
+[data-theme="diwali"] .brand-mark { display: inline-block; animation: flicker 2.6s ease-in-out infinite; }
+@keyframes flicker {
+  0%, 100% { filter: drop-shadow(0 0 3px #fbbf24); transform: scale(1); }
+  45% { filter: drop-shadow(0 0 9px #f59e0b); transform: scale(1.06) rotate(-2deg); }
+  70% { filter: drop-shadow(0 0 5px #fb923c); transform: scale(.98) rotate(1deg); }
+}
+
+/* Today ring and cards get a soft golden edge */
+[data-theme="diwali"] .card { border-color: color-mix(in srgb, var(--glow) 18%, var(--line)); }
+[data-theme="diwali"] .day.today { box-shadow: 0 0 0 2px var(--accent), 0 0 14px color-mix(in srgb, var(--glow) 45%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="diwali"] .ambient::before, [data-theme="diwali"] .ambient::after,
+  [data-theme="diwali"] .top::after, [data-theme="diwali"] .hero::before,
+  [data-theme="diwali"] .brand-mark { animation: none; }
 }

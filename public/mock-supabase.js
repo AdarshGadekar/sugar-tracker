@@ -210,7 +210,7 @@ export function createMockClient() {
         await wait(250);
         if (table !== "day_marks") return { data: null, error: err("42P01", "unknown table") };
         const mine = db.marks[currentId()] || {};
-        return { data: Object.entries(mine).map(([day, had_sugar]) => ({ day, had_sugar })), error: null };
+        return { data: Object.entries(mine).map(([day, v]) => ({ day, had_sugar: !!v, forgiven: v === "gift" })), error: null };
       },
     };
   }
@@ -288,11 +288,11 @@ export function createMockClient() {
       .filter((u) => Date.now() >= u.confirmAt)
       .map((u) => {
         const marks = db.marks[u.id] || {};
-        const sugar = Object.values(marks).filter(Boolean).length;
+        const sugar = Object.values(marks).filter((v) => v === true).length;
         return {
           name: u.name || "Player",
           sugar_days: sugar,
-          clean_days: Object.values(marks).length - sugar,
+          clean_days: Object.values(marks).filter((v) => v === false).length,
           streak: currentStreak(marks, today),
           locked: sugar > MAX_SUGAR,
           is_me: u.id === me,
@@ -310,11 +310,22 @@ export function createMockClient() {
     if (fn === "dm_threads") return dmThreads();
     if (fn === "dm_thread") return dmThread(arguments[1]?.p_other);
     if (fn === "mark_dm_read") return markDmRead(arguments[1]?.p_other);
+    if (fn === "next_announcement") {
+      const me = currentId();
+      const a = (db.announcements || []).find((x) => !(db.seen?.[me] || []).includes(x.id));
+      return { data: a ? [a] : [], error: null };
+    }
+    if (fn === "ack_announcement") {
+      const me = currentId();
+      ((db.seen ||= {})[me] ||= []).push(arguments[1]?.p_id);
+      save(db);
+      return { data: null, error: null };
+    }
     if (fn !== "mark_day") return { data: null, error: err("PGRST202", "unknown function") };
     const uid = currentId();
     if (!uid) return { data: null, error: err("28000", "Not signed in") };
     const mine = (db.marks[uid] ||= {});
-    let count = Object.values(mine).filter(Boolean).length;
+    let count = Object.values(mine).filter((v) => v === true).length;
     if (count > MAX_SUGAR) return { data: null, error: err("P0001", `Your tracker is locked: you used all ${MAX_SUGAR} chances.`) };
     if (p_day >= iso(new Date())) return { data: null, error: err("P0001", "You can only mark a day once it's over.") };
     if (p_day in mine) return { data: null, error: err("P0001", "That day is already marked.") };
@@ -340,6 +351,15 @@ export function createMockClient() {
     return { data: { sugar_count: count, max_sugar: MAX_SUGAR, locked: count > MAX_SUGAR }, error: null };
   }
 
-  return { auth, from, rpc, channel, removeChannel, simulateFriendMessage, simulateFriendDm,
+  // Same as PART 2 of supabase/diwali.sql: forgive every sugar day, one-time pop-up, group chat post.
+  function simulateGift() {
+    Object.values(db.marks).forEach((m) => Object.keys(m).forEach((d) => { if (m[d] === true) m[d] = "gift"; }));
+    (db.announcements ||= []).push({ id: Date.now(), icon: "🪔", title: "Happy Diwali! 🪔",
+      body: "All 3 hearts are back — it's a Diwali gift! 🎁 Your sugar days so far are forgiven. Fresh start, make it count ✨" });
+    postMessage({ user_id: null, name: "Desserted", kind: "system",
+      body: "🪔 Happy Diwali! Everyone got all 3 hearts back — it's a Diwali gift! 🎁 Fresh start, make it count ✨" });
+  }
+
+  return { auth, from, rpc, channel, removeChannel, simulateFriendMessage, simulateFriendDm, simulateGift,
     setRealtime: (on) => { realtimeOn = !!on; } };
 }
