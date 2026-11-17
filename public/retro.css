@@ -1,0 +1,212 @@
+/* ===================================================================
+   Retro theme — on while <html data-theme="retro">.
+   Hand-inked Indian street-comic look: cream paper, thick ink outlines,
+   hard offset shadows, signboard yellow, cart blue, rani pink, saffron.
+   Loaded after styles.css. Change data-theme in index.html to switch themes.
+   =================================================================== */
+:root[data-theme="retro"] {
+  --paper: #fffaf0; --bg: var(--paper); --card: #fff; --card-solid: #fff;
+  --text: #161412; --muted: #5f5850; --line: rgb(22 20 18 / .12);
+  --ink: #161412;           /* outlines */
+  --drop: #161412;          /* hard shadows */
+  --dots: rgb(22 20 18 / .07);
+  --good: #12772c; --good-bg: #bdf0b5; --bad: #c8231a; --bad-bg: #ffc6c0;
+  --accent: #1f4fd8; --accent-2: #e0218a; --accent-3: #ff7a00;
+  --yellow: #ffe23a; --awning: #e2312b; --awning-2: #fffaf0;
+  --sky-fill: #dedbd2;
+  --shadow: 4px 4px 0 var(--drop);
+  --radius: 16px;
+  --font: "Baloo 2", "Segoe UI", system-ui, sans-serif;
+  --display: "Yatra One", "Baloo 2", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  /* Night bazaar: navy night, chalk-cream ink lines, black shadows */
+  :root[data-theme="retro"] {
+    --paper: #16163a; --card: #23234f; --card-solid: #23234f;
+    --text: #fff4dc; --muted: #c4bba8; --line: rgb(255 244 220 / .14);
+    --ink: #fff4dc; --drop: #05051a; --dots: rgb(255 244 220 / .06);
+    --good: #8be89a; --good-bg: #1d5130; --bad: #ff9a90; --bad-bg: #5e2230;
+    --accent: #3d6cff; --accent-2: #ff4fae; --accent-3: #ff9a3c;
+    --awning-2: #fff4dc; --sky-fill: #23235a;
+  }
+}
+
+/* ---------- Paper + ink skyline along the bottom ---------- */
+[data-theme="retro"] body {
+  background: radial-gradient(var(--dots) 1.1px, transparent 1.6px) 0 0 / 14px 14px, var(--paper);
+  font-size: 16.5px;
+}
+[data-theme="retro"] .ambient span { display: none; }
+[data-theme="retro"] .ambient::before {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 150px;
+  background-color: var(--sky-fill);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 150'%3E%3Cpath d='M0 150V100h40V72h50v28h30V62h30V52h20v10h20v48h30V82h20a40 40 0 0 1 80 0h20v38h30V42h10V30l5-10 5 10v12h10v78h30V78h70v15h40V58h60v42h40V70a30 30 0 0 1 60 0v40h40V84h60V54h40v30h40v31h40V74h60v20h30V40h10V28l5-10 5 10v12h10v60h40V80h60v24h60v46z'/%3E%3C/svg%3E") bottom center / 1200px 150px repeat-x;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 150'%3E%3Cpath d='M0 150V100h40V72h50v28h30V62h30V52h20v10h20v48h30V82h20a40 40 0 0 1 80 0h20v38h30V42h10V30l5-10 5 10v12h10v78h30V78h70v15h40V58h60v42h40V70a30 30 0 0 1 60 0v40h40V84h60V54h40v30h40v31h40V74h60v20h30V40h10V28l5-10 5 10v12h10v60h40V80h60v24h60v46z'/%3E%3C/svg%3E") bottom center / 1200px 150px repeat-x;
+}
+/* ink outline of the same skyline, on top of the grey fill */
+[data-theme="retro"] .ambient::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 150px; opacity: .85;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 150'%3E%3Cpath fill='none' stroke='%23000' stroke-width='2.5' stroke-linejoin='round' d='M0 100h40V72h50v28h30V62h30V52h20v10h20v48h30V82h20a40 40 0 0 1 80 0h20v38h30V42h10V30l5-10 5 10v12h10v78h30V78h70v15h40V58h60v42h40V70a30 30 0 0 1 60 0v40h40V84h60V54h40v30h40v31h40V74h60v20h30V40h10V28l5-10 5 10v12h10v60h40V80h60v24h60v-4'/%3E%3C/svg%3E") bottom center / 1200px 150px repeat-x;
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme="retro"] .ambient::after { filter: invert(1); opacity: .35; }
+}
+
+/* ---------- Header: stall awning + signboard logo ---------- */
+[data-theme="retro"] .top {
+  background: var(--paper); border-bottom: 3px solid var(--ink);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+[data-theme="retro"] .top::before,
+[data-theme="retro"] .top::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 100%; pointer-events: none;
+}
+/* ink scallops, peeking out a little below the striped ones */
+[data-theme="retro"] .top::before {
+  height: 18px; background: var(--ink);
+  -webkit-mask: radial-gradient(circle at 14px 0, #000 15.5px, transparent 16px) 0 0 / 28px 18px repeat-x;
+          mask: radial-gradient(circle at 14px 0, #000 15.5px, transparent 16px) 0 0 / 28px 18px repeat-x;
+}
+[data-theme="retro"] .top::after {
+  height: 16px;
+  background: repeating-linear-gradient(90deg, var(--awning) 0 28px, var(--awning-2) 28px 56px);
+  -webkit-mask: radial-gradient(circle at 14px 0, #000 13px, transparent 13.5px) 0 0 / 28px 16px repeat-x;
+          mask: radial-gradient(circle at 14px 0, #000 13px, transparent 13.5px) 0 0 / 28px 16px repeat-x;
+}
+[data-theme="retro"] .top-inner { min-height: 62px; }
+[data-theme="retro"] .brand {
+  font-family: var(--display); font-weight: 400; font-size: 1.45rem; letter-spacing: .01em; color: #161412;
+  background: var(--yellow); padding: 3px 16px 0; border: 2.5px solid #161412; border-radius: 6px;
+  outline: 2px dashed #161412; outline-offset: -7px; box-shadow: 3px 3px 0 var(--drop);
+  transform: rotate(-1.5deg);
+}
+[data-theme="retro"] .wrap { padding-top: 32px; }
+[data-theme="retro"] .account button { white-space: nowrap; }
+@media (max-width: 480px) {
+  [data-theme="retro"] .top-inner { padding: 10px 12px; gap: 8px; }
+  [data-theme="retro"] .brand { font-size: 1.1rem; padding: 2px 10px 0; gap: 5px; outline-offset: -5px; }
+  [data-theme="retro"] .account { gap: 6px; }
+  [data-theme="retro"] .account button { padding: 6px 10px; }
+}
+
+/* ---------- Type ---------- */
+[data-theme="retro"] h2, [data-theme="retro"] h3,
+[data-theme="retro"] .player-name, [data-theme="retro"] .headline {
+  font-family: var(--display); font-weight: 400; letter-spacing: .01em;
+}
+[data-theme="retro"] .headline { font-size: clamp(2rem, 7.5vw, 2.8rem); line-height: 1.15; }
+[data-theme="retro"] .grad {
+  background: linear-gradient(transparent 58%, var(--yellow) 58% 92%, transparent 92%);
+  -webkit-background-clip: border-box; background-clip: border-box;
+  color: var(--accent-2); animation: none; padding: 0 .12em;
+}
+@media (prefers-color-scheme: dark) { [data-theme="retro"] .grad { background: none; color: var(--yellow); } }
+[data-theme="retro"] .eyebrow {
+  display: inline-block; padding: 3px 12px 1px; border-radius: 4px; transform: rotate(-2deg);
+  background: var(--accent); color: #fff; border: 2px solid var(--ink); letter-spacing: .1em;
+}
+
+/* ---------- Cards, banners, dialogs: ink outline + hard shadow ---------- */
+[data-theme="retro"] .card {
+  border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--drop); border-radius: var(--radius);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+[data-theme="retro"] .banner { border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--drop); }
+[data-theme="retro"] dialog { border: 3px solid var(--ink); border-radius: 18px; box-shadow: 8px 8px 0 var(--drop); }
+[data-theme="retro"] dialog::backdrop { background: rgb(22 20 18 / .45); backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* ---------- Buttons ---------- */
+/* zero-specificity wrappers: components that style their own buttons (.day, tabs, emoji…) still win */
+:where([data-theme="retro"]) button:where(:not(.day, .sdk-cell, .link, .dm-row, .sdk-levels *, .chat-tabs *, .emoji-pop *)) {
+  border: 2.5px solid var(--ink); border-radius: 12px; font-weight: 700; box-shadow: 3px 3px 0 var(--drop);
+}
+:where([data-theme="retro"]) button:where(:not(.day, .sdk-cell, .link, .dm-row, .sdk-levels *, .chat-tabs *, .emoji-pop *)):not(:disabled):hover {
+  transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--drop);
+}
+:where([data-theme="retro"]) button:where(:not(.day, .sdk-cell, .link, .dm-row, .sdk-levels *, .chat-tabs *, .emoji-pop *)):not(:disabled):active {
+  transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--drop);
+}
+:where([data-theme="retro"]) button.secondary { background: var(--card-solid); color: var(--text); border: 2.5px solid var(--ink); }
+:where([data-theme="retro"]) button.secondary:not(:disabled):hover { background: var(--yellow); color: #161412; }
+:where([data-theme="retro"]) button.good { background: #1f9d3a; }
+:where([data-theme="retro"]) button.bad { background: #e0352b; }
+[data-theme="retro"] .sdk-toggle { box-shadow: 3px 3px 0 var(--drop); background: var(--accent-2); }
+[data-theme="retro"] button.link { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- Inputs ---------- */
+[data-theme="retro"] input:not(.sdk-cell) { border: 2.5px solid var(--ink); border-radius: 10px; }
+[data-theme="retro"] input:not(.sdk-cell):focus { border-color: var(--ink); box-shadow: 4px 4px 0 var(--accent); }
+[data-theme="retro"] label { color: var(--text); font-weight: 600; }
+
+/* ---------- Player card + avatars ---------- */
+[data-theme="retro"] .streak { border: 2px solid var(--ink); background: var(--yellow); color: #161412; box-shadow: 2px 2px 0 var(--drop); }
+[data-theme="retro"] .avatar { background: var(--accent-2); border: 2px solid var(--ink); }
+[data-theme="retro"] .board-row:nth-child(3n+2) .avatar.sm { background: var(--accent); }
+[data-theme="retro"] .board-row:nth-child(3n+3) .avatar.sm { background: var(--accent-3); }
+[data-theme="retro"] .dm-row:nth-child(n) .avatar { background: var(--accent-3); }
+
+/* ---------- Calendar ---------- */
+[data-theme="retro"] .cal th { color: var(--text); font-weight: 700; }
+[data-theme="retro"] .day {
+  border: 2px solid var(--ink); border-radius: 10px; background: var(--card-solid); font-weight: 700;
+  box-shadow: 2px 2px 0 var(--drop);
+}
+[data-theme="retro"] .day:not(:disabled):not(.nope):hover {
+  transform: translate(-2px, -2px); border-color: var(--ink); background: var(--yellow); color: #161412;
+  box-shadow: 4px 4px 0 var(--drop);
+}
+[data-theme="retro"] .day.no { background: var(--good-bg); border-color: var(--ink); color: var(--good); }
+[data-theme="retro"] .day.yes { background: var(--bad-bg); border-color: var(--ink); color: var(--bad); }
+[data-theme="retro"] .day.gift { background: color-mix(in srgb, var(--yellow) 55%, var(--card-solid)); border-color: var(--ink); color: #8a5a00; }
+[data-theme="retro"] .day.today { outline: 3px dashed var(--accent); outline-offset: 2px; box-shadow: 2px 2px 0 var(--drop); }
+[data-theme="retro"] .day.nope.today { background: color-mix(in srgb, var(--accent) 10%, var(--card-solid)); }
+[data-theme="retro"] .day.future { opacity: .45; box-shadow: none; border-style: dashed; }
+[data-theme="retro"] .day .tag { color: var(--accent); }
+[data-theme="retro"] .dot { border: 1.5px solid var(--ink); }
+[data-theme="retro"] .legend { color: var(--text); }
+
+/* ---------- Leaderboard ---------- */
+[data-theme="retro"] .board-row { border: 2px solid transparent; }
+[data-theme="retro"] .board-row:hover { background: color-mix(in srgb, var(--yellow) 30%, transparent); }
+[data-theme="retro"] .board-row.me { border: 2px dashed var(--ink); background: color-mix(in srgb, var(--yellow) 40%, transparent); }
+@media (prefers-color-scheme: dark) {
+  [data-theme="retro"] .board-row.me { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+  [data-theme="retro"] .board-row:hover, [data-theme="retro"] .dm-row:not(:disabled):hover { background: rgb(255 244 220 / .08); }
+}
+[data-theme="retro"] .rank { color: var(--text); }
+[data-theme="retro"] .who .nm em { color: var(--accent-2); }
+
+/* ---------- Toast, fact pop-up, "not yet" bubble ---------- */
+[data-theme="retro"] .toast { background: var(--yellow); color: #161412; border: 2.5px solid #161412; border-radius: 12px;
+  box-shadow: 4px 4px 0 var(--drop); backdrop-filter: none; -webkit-backdrop-filter: none; }
+[data-theme="retro"] .toast.error { background: var(--bad); color: #fff; border-color: #161412; }
+[data-theme="retro"] .fact { background: var(--card-solid); border: 3px solid var(--ink); border-radius: 16px;
+  box-shadow: 6px 6px 0 var(--drop); backdrop-filter: none; -webkit-backdrop-filter: none; }
+[data-theme="retro"] .fact.good, [data-theme="retro"] .fact.bad { border-color: var(--ink); }
+[data-theme="retro"] .fact-timer { height: 5px; }
+[data-theme="retro"] .bubble { background: var(--yellow); color: #161412; border: 2.5px solid #161412; border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--drop); font-weight: 600; }
+[data-theme="retro"] .bubble::after { border-top-color: #161412; margin-top: 2px; }
+
+/* ---------- Chat: comic speech bubbles ---------- */
+[data-theme="retro"] .chat { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px;
+  box-shadow: 8px 8px 0 var(--drop); backdrop-filter: none; -webkit-backdrop-filter: none; }
+@media (max-width: 600px) { [data-theme="retro"] .chat { border: 0; border-radius: 0; box-shadow: none; } }
+[data-theme="retro"] .chat-head { border-bottom: 3px solid var(--ink); background: var(--yellow); color: #161412; }
+[data-theme="retro"] .chat-head .muted { color: #4a4238; }
+[data-theme="retro"] .chat-tabs { background: var(--card-solid); border: 2.5px solid var(--ink); border-radius: 12px; }
+[data-theme="retro"] .chat-tabs button { border-radius: 8px; }
+[data-theme="retro"] .chat-tabs button.on { background: var(--accent); color: #fff; box-shadow: none; }
+[data-theme="retro"] .msg-box { background: var(--card-solid); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--drop); }
+[data-theme="retro"] .msg.mine .msg-box { background: var(--accent); color: #fff; }
+[data-theme="retro"] .msg.system { background: var(--yellow); color: #161412; border: 2px dashed #161412; }
+[data-theme="retro"] .chat-badge, [data-theme="retro"] .tab-badge { background: var(--accent-2); border: 1.5px solid var(--ink); }
+[data-theme="retro"] .chat-form { border-top: 3px solid var(--ink); }
+[data-theme="retro"] .emoji-pop { border: 2.5px solid var(--ink); box-shadow: 4px 4px 0 var(--drop); }
+[data-theme="retro"] .dm-row:not(:disabled):hover { background: color-mix(in srgb, var(--yellow) 30%, transparent); }
+
+/* ---------- Sudoku ---------- */
+[data-theme="retro"] .sdk-panel { border: 3px solid var(--ink); border-radius: 14px; box-shadow: 6px 6px 0 var(--drop); }
+[data-theme="retro"] .sdk-grid { border: 2.5px solid var(--ink); }
+[data-theme="retro"] .sdk-levels { background: var(--card-solid); border: 2px solid var(--ink); }
+[data-theme="retro"] .sdk-levels button.on { background: var(--yellow); color: #161412; box-shadow: none; }

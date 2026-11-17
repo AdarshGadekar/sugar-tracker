@@ -681,3 +681,52 @@ dialog .link { display: block; margin: 10px auto 0; }
   .lantern svg { width: 82px; height: auto; }
 }
 @media (max-width: 700px) { .lantern { display: none; } } /* phones: no side room at all */
+
+/* ============ Preloader: a laddoo running away from sugar ============ */
+.loader {
+  position: fixed; inset: 0; z-index: 100; display: grid; place-content: center; justify-items: center; gap: 4px;
+  background: radial-gradient(var(--dots, transparent) 1.1px, transparent 1.6px) 0 0 / 14px 14px, var(--paper, var(--bg));
+  transition: opacity .5s var(--ease), visibility .5s;
+  /* failsafe: never stay up for good if the app script fails to load */
+  animation: loader-failsafe .5s 12s forwards;
+}
+.loader.out { opacity: 0; visibility: hidden; }
+@keyframes loader-failsafe { to { opacity: 0; visibility: hidden; } }
+.ld { width: min(60vw, 240px); height: auto; overflow: visible; }
+.ld * { stroke: var(--ink, var(--text)); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.ld .ld-body { fill: #ffa31a; }
+.ld .ld-boondi circle { fill: #d96a00; stroke: none; }
+.ld .ld-eye { fill: #fff; stroke-width: 3; }
+.ld .ld-pupil { fill: #161412; stroke: none; }
+.ld .ld-mouth { fill: #161412; stroke: none; }
+.ld .ld-brow { stroke-width: 3.5; }
+.ld .ld-sweat { fill: #7cc8ff; stroke-width: 2.5; }
+.ld .ld-dust circle { fill: var(--card-solid); stroke-width: 2.5; }
+.ld .ld-speed path { stroke-width: 3.5; }
+.ld .ld-ground { stroke-dasharray: 18 12; animation: ld-ground .5s linear infinite; }
+.ld-leg, .ld-arm { transform-box: fill-box; }
+.ld-leg { transform-origin: 0 0; animation: ld-leg .32s ease-in-out infinite alternate; }
+.ld-leg.b { animation-delay: -.32s; }
+.ld-arm.a { transform-origin: 100% 100%; animation: ld-arm .32s ease-in-out infinite alternate; }
+.ld-arm.b { transform-origin: 0 100%; animation: ld-arm .32s ease-in-out -.32s infinite alternate; }
+.ld-bob { animation: ld-bob .32s ease-in-out infinite alternate; }
+.ld-sweat { animation: ld-sweat .64s ease-in infinite; }
+.ld-speed path { animation: ld-speed .64s linear infinite; }
+.ld-speed path:nth-child(2) { animation-delay: -.2s; }
+.ld-speed path:nth-child(3) { animation-delay: -.42s; }
+.ld-dust circle { transform-box: fill-box; transform-origin: center; animation: ld-dust .96s ease-out infinite; }
+.ld-dust circle:nth-child(2) { animation-delay: -.32s; }
+.ld-dust circle:nth-child(3) { animation-delay: -.64s; }
+.ld-text { margin: 6px 0 0; font: 400 1.2rem var(--display, var(--font)); color: var(--text); }
+.ld-text span { animation: ld-dots 1.2s steps(1) infinite; }
+.ld-text span:nth-child(2) { animation-delay: .3s; }
+.ld-text span:nth-child(3) { animation-delay: .6s; }
+@keyframes ld-ground { to { stroke-dashoffset: 30; } }
+@keyframes ld-leg { from { transform: rotate(38deg); } to { transform: rotate(-38deg); } }
+@keyframes ld-arm { from { transform: rotate(-28deg); } to { transform: rotate(28deg); } }
+@keyframes ld-bob { from { transform: translateY(0); } to { transform: translateY(-6px) rotate(3deg); } }
+@keyframes ld-sweat { 0% { transform: translate(0, 0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(18px, -6px); opacity: 0; } }
+@keyframes ld-speed { from { transform: translateX(14px); opacity: 1; } to { transform: translateX(-26px); opacity: 0; } }
+@keyframes ld-dust { from { transform: translateX(0) scale(.3); opacity: 1; } to { transform: translateX(-46px) translateY(-10px) scale(1.6); opacity: 0; } }
+@keyframes ld-dots { 0% { opacity: 0; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ld *, .ld-text span { animation: none !important; } }

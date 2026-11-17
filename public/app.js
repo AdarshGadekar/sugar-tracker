@@ -241,9 +241,21 @@ supabase.auth.onAuthStateChange((_event, session) => {
   showView();
 });
 
+// Preloader: let the laddoo run for at least one lap, then fade it out.
+const bootAt = performance.now();
+function hideLoader() {
+  const el = $("loader");
+  if (!el || el.classList.contains("out")) return;
+  setTimeout(() => {
+    el.classList.add("out");
+    setTimeout(() => el.remove(), 600);
+  }, Math.max(0, 1100 - (performance.now() - bootAt)));
+}
+
 let viewShown = false;
 function showView() {
   viewShown = true;
+  hideLoader();
   const signedIn = !!state.user;
   $("auth-view").hidden = signedIn;
   $("app-view").hidden = !signedIn;

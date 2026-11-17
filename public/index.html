@@ -1,19 +1,50 @@
 <!doctype html>
-<html lang="en" data-theme="diwali">
+<html lang="en" data-theme="retro">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
   <title>Desserted · 3 lives, 0 desserts</title>
   <meta name="description" content="Desserted — a tiny game for quitting sugar with friends. 3 lives, 0 desserts." />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍨</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Yatra+One&display=swap" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="retro.css" />
 </head>
 <body>
+  <!-- Preloader: a laddoo making a run for it (hidden by app.js once the first screen is ready) -->
+  <div id="loader" class="loader" role="status" aria-label="Loading Desserted">
+    <svg class="ld" viewBox="0 0 200 150" aria-hidden="true">
+      <g class="ld-speed"><path d="M20 52h26" /><path d="M8 72h30" /><path d="M22 92h22" /></g>
+      <g class="ld-dust"><circle cx="58" cy="128" r="7" /><circle cx="58" cy="128" r="5" /><circle cx="58" cy="128" r="6" /></g>
+      <path class="ld-ground" d="M0 136h200" />
+      <g transform="translate(88 104)"><path class="ld-leg a" d="M0 0v24h10" /></g>
+      <g transform="translate(110 104)"><path class="ld-leg b" d="M0 0v24h10" /></g>
+      <g class="ld-bob">
+        <g transform="translate(70 76)"><path class="ld-arm a" d="M0 0l-16 -10" /></g>
+        <g transform="translate(130 76)"><path class="ld-arm b" d="M0 0l16 -12" /></g>
+        <circle class="ld-body" cx="100" cy="72" r="36" />
+        <g class="ld-boondi">
+          <circle cx="80" cy="56" r="2.6" /><circle cx="94" cy="46" r="2.4" /><circle cx="114" cy="50" r="2.6" />
+          <circle cx="126" cy="66" r="2.4" /><circle cx="122" cy="88" r="2.6" /><circle cx="104" cy="98" r="2.4" />
+          <circle cx="84" cy="94" r="2.6" /><circle cx="74" cy="76" r="2.4" />
+        </g>
+        <path class="ld-brow" d="M84 60l10-5M118 60l-10-5" />
+        <circle class="ld-eye" cx="92" cy="68" r="7.5" /><circle class="ld-eye" cx="110" cy="68" r="7.5" />
+        <circle class="ld-pupil" cx="88" cy="69" r="3.2" /><circle class="ld-pupil" cx="106" cy="69" r="3.2" />
+        <ellipse class="ld-mouth" cx="101" cy="86" rx="5" ry="6.5" />
+        <path class="ld-sweat" d="M138 44c4 6 4 10 0 11-4-1-4-5 0-11z" />
+      </g>
+    </svg>
+    <p class="ld-text">Running away from sugar<span>.</span><span>.</span><span>.</span></p>
+  </div>
+
   <div class="ambient" aria-hidden="true"><span></span><span></span><span></span></div>
   <header class="top">
     <div class="top-inner">
-      <h1 class="brand"><span class="brand-mark" aria-hidden="true">🪔</span>Desserted</h1>
+      <h1 class="brand"><span class="brand-mark" aria-hidden="true">🍨</span>Desserted</h1>
       <div class="account" id="account" hidden>
         <button id="chat-toggle" class="secondary small chat-toggle" type="button" aria-expanded="false" aria-controls="chat">
           💬 Chat<span id="chat-badge" class="chat-badge" hidden>0</span>
@@ -32,7 +63,7 @@
         <div class="hero-hearts" aria-hidden="true">
           <span style="--i:0">❤️</span><span style="--i:1">❤️</span><span style="--i:2">❤️</span>
         </div>
-        <p class="eyebrow">Happy Diwali · 3 lives, 0 desserts</p>
+        <p class="eyebrow">3 lives · 0 desserts</p>
         <h2 class="headline">Quit sugar.<br /><span class="grad">One day at a time.</span></h2>
         <p class="muted">Mark each day on a calendar: sugar or no sugar. You get <strong>3 lives</strong>.
           Every sugar day breaks a heart — the 4th one is game over.<br />Don't get desserted.</p>
