@@ -30,6 +30,85 @@
   mask-composite: intersect;
 }
 
+/* ---------- Day / night (mode.js sets html[data-mode]) ---------- */
+.scene-art { transition: opacity 1.2s ease; }
+.scene-day { opacity: 0; }
+[data-mode="day"] .scene-day { opacity: 1; }
+[data-mode="day"] .scene-art:not(.scene-day) { opacity: 0; }   /* else the night picture shows through the faded edges */
+
+/* header: just the day/night switch and Sign out (the profile circle goes) */
+#avatar { display: none !important; }
+
+/* day/night switch: night = black pill, stars, crescent moon on the right; day = sky, clouds, sun on the left */
+#mode-toggle.mode-switch, #mode-toggle.mode-switch:hover, #mode-toggle.mode-switch:active {
+  position: relative; flex: none; width: 66px; height: 32px; padding: 0; margin: 0; overflow: hidden; cursor: pointer;
+  border: 2.5px solid #161412; border-radius: 99px; box-shadow: 2px 2px 0 #161412; transform: none;
+  background: #07070f; transition: background .5s ease; }
+#mode-toggle.mode-switch:focus-visible { outline: 3px solid var(--accent, #1f4fd8); outline-offset: 2px; }
+.ms-knob { position: absolute; top: 3px; left: 37px; width: 21px; height: 21px; border-radius: 50%; background: #f5f1e8;
+  box-shadow: 0 0 8px rgb(255 255 255 / .35); transition: left .5s cubic-bezier(.5, 0, .3, 1.3), background .5s, box-shadow .5s; }
+.ms-knob::after { content: ""; position: absolute; top: -3px; left: -6px; width: 19px; height: 19px; border-radius: 50%;
+  background: #07070f; transition: transform .5s ease, background .5s; }          /* bites the crescent out of the moon */
+.ms-stars { position: absolute; inset: 0; transition: transform .5s ease, opacity .4s;
+  background-image:
+    radial-gradient(circle at 9px 7px, #fff 1.3px, transparent 1.7px),
+    radial-gradient(circle at 20px 5px, #fff 1px, transparent 1.4px),
+    radial-gradient(circle at 15px 15px, #fff 1.4px, transparent 1.8px),
+    radial-gradient(circle at 27px 13px, #fff .9px, transparent 1.3px),
+    radial-gradient(circle at 8px 21px, #fff 1px, transparent 1.4px),
+    radial-gradient(circle at 23px 22px, #fff 1.2px, transparent 1.6px),
+    radial-gradient(circle at 32px 5px, #fff .8px, transparent 1.2px);
+  background-repeat: no-repeat; }
+.ms-clouds { position: absolute; inset: 0; opacity: 0; transform: translateX(20px); transition: transform .5s ease, opacity .4s;
+  background-image:
+    radial-gradient(circle at 42px 21px, #fff 6px, transparent 6.5px),
+    radial-gradient(circle at 50px 17px, #fff 7.5px, transparent 8px),
+    radial-gradient(circle at 57px 22px, #fff 5.5px, transparent 6px),
+    radial-gradient(circle at 36px 25px, #fff 4px, transparent 4.5px);
+  background-repeat: no-repeat; }
+[data-mode="day"] #mode-toggle.mode-switch { background: linear-gradient(#5fb8f5, #9bd6ff); }
+[data-mode="day"] .ms-knob { left: 4px; background: #ffd23f; box-shadow: 0 0 0 3px rgb(255 210 63 / .35), 0 0 10px rgb(255 190 40 / .8); }
+[data-mode="day"] .ms-knob::after { transform: scale(0); }
+[data-mode="day"] .ms-stars { opacity: 0; transform: translateX(-20px); }
+[data-mode="day"] .ms-clouds { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .ms-knob, .ms-knob::after, .ms-stars, .ms-clouds, #mode-toggle.mode-switch { transition: none !important; } }
+[data-mode="day"] .scene-view { background: linear-gradient(#5ca2e4, #b9dbf5 50%, #c4dff3 66%, #8c8a90 78%, #727078); color: #1c1407; }
+[data-mode="day"] .scene-hint { color: rgb(28 20 7 / .7); }
+.glow, .twinkle, .smoke { transition: opacity 1s ease; }
+[data-mode="day"] .glow, [data-mode="day"] .twinkle { opacity: 0 !important; }
+[data-mode="day"] .smoke { opacity: .5; }
+
+/* the shutter over the serving window: rolls down for the day, up at night */
+.day-shutter { position: absolute; left: 17.99%; top: 27.98%; width: 25.25%; height: 26.67%; pointer-events: none;
+  display: grid; place-items: center; padding-bottom: 1.6cqw; transform-origin: 50% 0; transform: scaleY(0);
+  transition: transform 1.1s cubic-bezier(.6, 0, .3, 1.15);
+  background:
+    linear-gradient(#0000 calc(100% - 1.6cqw), #5b5f66 calc(100% - 1.6cqw), #3f4248),                 /* bottom bar */
+    repeating-linear-gradient(#c3c8cf 0 .55cqw, #9aa0a8 .55cqw .7cqw, #e1e5ea .7cqw 1.05cqw, #a9afb7 1.05cqw 1.2cqw);
+  border: .2cqw solid #2c2f3a; border-top: 0; box-shadow: inset 0 -.4cqw .8cqw rgb(0 0 0 / .25), 0 .4cqw .8cqw rgb(0 0 0 / .25); }
+.day-shutter::after { content: ""; position: absolute; left: 50%; bottom: .45cqw; width: 3cqw; height: .7cqw; translate: -50% 0;
+  border-radius: .35cqw; background: #2c2f3a; }   /* handle */
+/* spray-painted on the shutter: uneven paint, a little haze, drips */
+.graffiti { position: relative; display: flex; flex-direction: column; align-items: center; rotate: -5deg; translate: 0 -.6cqw;
+  font-family: "Permanent Marker", var(--display, cursive); text-align: center; pointer-events: none; }
+.graffiti b { font-weight: 400; font-size: 2.35cqw; line-height: 1; letter-spacing: .05em;
+  color: #ff2e8a; -webkit-text-stroke: .1cqw #2a0d22;
+  text-shadow: 0 0 .35cqw rgb(255 46 138 / .55), .14cqw .14cqw 0 #2a0d22; }
+.graffiti b::after { content: ""; position: absolute; left: 12%; right: 18%; top: 2.1cqw; height: 1.4cqw; pointer-events: none;
+  background:                                                    /* paint drips */
+    radial-gradient(circle at 50% 100%, #ff2e8a .18cqw, transparent .2cqw) 6% 0 / .4cqw .75cqw no-repeat,
+    linear-gradient(#ff2e8a, #ff2e8a) 6.4% 0 / .14cqw .55cqw no-repeat,
+    radial-gradient(circle at 50% 100%, #ff2e8a .16cqw, transparent .18cqw) 41% 0 / .36cqw .9cqw no-repeat,
+    linear-gradient(#ff2e8a, #ff2e8a) 41.3% 0 / .12cqw .7cqw no-repeat,
+    radial-gradient(circle at 50% 100%, #ff2e8a .15cqw, transparent .17cqw) 83% 0 / .34cqw .7cqw no-repeat,
+    linear-gradient(#ff2e8a, #ff2e8a) 83.2% 0 / .12cqw .5cqw no-repeat; }
+.graffiti i { margin-top: .75cqw; font-style: normal; font-size: .98cqw; line-height: 1.1; color: #1fd1b9; rotate: 2deg;
+  -webkit-text-stroke: .05cqw #06302b; text-shadow: 0 0 .3cqw rgb(31 209 185 / .5); }
+.graffiti em { margin-top: .35cqw; align-self: flex-end; font-style: normal; font-size: .8cqw; color: #2a2a2a; rotate: -8deg;
+  opacity: .85; text-shadow: 0 0 .2cqw rgb(0 0 0 / .3); }
+[data-mode="day"] .day-shutter { transform: scaleY(1); }
+[data-mode="day"] .scene.is-locked .closed-plank { z-index: 1; }
+
 /* ---------- Ambient life: warm window light, headlights, chimney smoke, stars ---------- */
 .glow { position: absolute; pointer-events: none; border-radius: 50%; mix-blend-mode: screen; }
 .window-glow { left: 18%; top: 21%; width: 25%; height: 36%; border-radius: 18%;
@@ -65,6 +144,17 @@
   box-shadow: 0 .15cqw .5cqw rgb(0 0 0 / .4); opacity: 0; transition: opacity .2s, translate .2s; pointer-events: none; }
 .spot:hover .spot-tag, .spot:focus-visible .spot-tag { opacity: 1; translate: -50% .7cqw; }
 
+/* chat lives on the truck now (door window, bell, phone dock), so the header button goes */
+#chat-toggle { display: none; }
+
+/* roof sign "No-sugar specials": glows a little, tap for a treat idea */
+.scene .spot-sign { left: 20.78%; top: 9.45%; width: 19.48%; height: 9.3%; border-radius: .8cqw; rotate: -1.5deg; }
+.scene .spot-sign:hover, .scene .spot-sign:focus-visible { box-shadow: 0 0 2cqw rgb(255 215 94 / .55); }
+.spot-sign::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(100deg, transparent 35%, rgb(255 255 255 / .45) 50%, transparent 65%) -150% 0 / 60% 100% no-repeat;
+  animation: sign-shine 7s ease-in-out infinite; mix-blend-mode: soft-light; }
+@keyframes sign-shine { 0%, 70% { background-position: -150% 0; } 100% { background-position: 250% 0; } }
+
 /* paper calendar hanging off the awning: covers the painted one with the real month */
 .scene .spot-cal { left: 10.76%; top: 35.47%; width: 6.9%; height: 14.83%; transform-origin: 50% -2.8cqw;
   animation: paper-sway 6s ease-in-out infinite; }
@@ -86,6 +176,7 @@
 .paper-grid b.today { box-shadow: 0 0 0 .12cqw #1f4fd8; color: #1f4fd8; }
 .paper-grid b.future { opacity: .45; }
 .paper-grid b.blank { visibility: hidden; }
+.paper-grid b.wd { aspect-ratio: auto; border-radius: 0; font-size: .34cqw; font-weight: 800; color: #6b6258; }
 
 /* chalkboard: "How everyone's doing" in chalk */
 .scene .spot-board { left: 44.11%; top: 32.27%; width: 7.34%; height: 24.13%; }
@@ -97,8 +188,13 @@
     #262a28;
   box-shadow: inset 0 0 1cqw rgb(0 0 0 / .6); transition: box-shadow .25s; }
 .chalk-title { font-size: .78cqw; line-height: 1.05; text-align: center; text-transform: uppercase; letter-spacing: .02em;
-  padding-bottom: .4cqw; border-bottom: .1cqw dashed rgb(241 239 230 / .55); }
+  padding-bottom: .55cqw; background: radial-gradient(60% .18cqw at 50% 100%, rgb(241 239 230 / .75), transparent) bottom / 100% .4cqw no-repeat; }
 .chalk-rows { display: flex; flex-direction: column; gap: .32cqw; }
+.chalk-rows .chalk-cols { font-size: .5cqw; opacity: .8; padding-bottom: .1cqw; }
+.chalk-rows .chalk-cols em { text-transform: none; }
+.chalk-rows i { font-style: normal; display: grid; place-items: center; flex: none; width: .95cqw; height: .95cqw; border-radius: 50%;
+  font-size: .45cqw; border: .08cqw solid var(--chalk); }
+.chalk-rows span.me i { background: #e0218a; border-color: #e0218a; color: #fff; }
 .chalk-rows span { display: flex; align-items: baseline; gap: .3cqw; font-size: .56cqw; line-height: 1.15; white-space: nowrap; }
 .chalk-rows em { font-style: normal; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .chalk-rows span.me em { color: #ffe27a; }
@@ -216,11 +312,27 @@
 @keyframes fade-in { from { opacity: 0; } }
 @keyframes fade-out { to { opacity: 0; } }
 .closeup-item { position: relative; width: min(560px, 100%); }
-.scene .spot.lifted { opacity: 0; transition: opacity .15s; }   /* its close-up is open */
 .closeup-item[hidden] { display: none; }
 .closeup-item[data-item="board"] { width: min(520px, 100%); }
 .closeup .closeup-close { position: fixed; top: 76px; right: 16px; z-index: 1; width: 44px; height: 44px; padding: 0;
   border-radius: 50%; font-size: 1.1rem; }
+
+/* special close-up: a menu card in the roof sign's style (yellow board, dashed edge) */
+.closeup-item[data-item="special"] { width: min(420px, 100%); }
+.menu-card { position: relative; padding: 26px 24px 20px; text-align: center; color: #2a1d06;
+  background: #ffd75e; border: 4px solid #2a1d06; border-radius: 16px; box-shadow: 0 24px 60px rgb(0 0 0 / .5);
+  outline: 3px dashed #2a1d06; outline-offset: -14px; }
+.menu-card.swap { animation: menu-swap .45s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes menu-swap { from { transform: rotateY(80deg); opacity: .3; } }
+.menu-kicker { margin: 0; font: 700 .8rem var(--font, inherit); letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
+.menu-emoji { font-size: 4.2rem; line-height: 1.1; margin: 8px 0 2px; filter: drop-shadow(0 4px 0 rgb(0 0 0 / .15)); }
+.menu-name { margin: 0 0 6px; font: 400 1.9rem/1.15 var(--display, inherit); color: #2a1d06; }
+.menu-why { margin: 0 0 12px; font-size: 1.02rem; font-weight: 600; }
+.menu-how { margin: 0 0 16px; padding: 10px 12px; font-size: .92rem; line-height: 1.45; text-align: left;
+  background: rgb(255 255 255 / .55); border-radius: 10px; }
+.menu-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.menu-stamp { padding: 4px 10px; font: 400 .9rem var(--display, inherit); color: #12772c; border: 2.5px solid #12772c;
+  border-radius: 8px; rotate: -6deg; }
 
 /* calendar close-up: the same paper calendar, now big — hooks, rings, red header */
 .hanger { position: relative; padding-top: 12px; }
@@ -337,6 +449,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .balloon.alive, .scene .spot-cal, .smoke i, .twinkle i, .lamp, .moon, .window-glow, .pane-pull, .ring-waves i { animation: none !important; }
-  .pane, .closeup-item { transition: none !important; }
+  .balloon.alive, .scene .spot-cal, .spot-sign::after, .day-shutter, .scene-day, .smoke i, .twinkle i, .lamp, .moon, .window-glow, .pane-pull, .ring-waves i { animation: none !important; }
+  .pane, .closeup-item, .day-shutter, .scene-day { transition: none !important; }
 }

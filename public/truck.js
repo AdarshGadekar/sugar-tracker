@@ -3,6 +3,8 @@
 // #board-list, #chat-list, #chat-badge) onto the painted truck. chat.js and the data logic
 // don't need to know the truck exists.
 
+import { SPECIALS, todaysIndex } from "./specials.js";
+
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = (id) => document.getElementById(id);
 
@@ -19,6 +21,7 @@ export function mountTruck() {
   mountChatGlass();
   mirrorCalendar();
   mirrorBoard();
+  mountSpecials();
   startPanned();
 }
 
@@ -53,7 +56,7 @@ function openCloseup(name, from) {
   layer.hidden = false;
   layer.querySelectorAll(".closeup-item").forEach((i) => (i.hidden = i !== item));
   openItem = item; opener = from;
-  from?.classList.add("lifted");
+  if (name === "special") showSpecial(todaysIndex(), true);
   lift(item, from?.getBoundingClientRect(), false);
   layer.querySelector(".closeup-close").focus({ preventScroll: true });
 }
@@ -67,7 +70,6 @@ function finishClose() {
   item.hidden = true;
   $("closeup").hidden = true;
   $("closeup").classList.remove("closing");
-  back?.classList.remove("lifted");
 }
 
 function closeCloseup() {
@@ -177,13 +179,31 @@ function popFrom(from, panel) {
   lift(panel, a, false);
 }
 
+// ---------- Roof sign: a no-added-sugar treat idea ----------
+let specialAt = 0;
+function showSpecial(i, isToday = false) {
+  specialAt = (i + SPECIALS.length) % SPECIALS.length;
+  const sp = SPECIALS[specialAt];
+  $("special-kicker").textContent = isToday ? "Today's no-sugar special" : "Also on the menu";
+  $("special-emoji").textContent = sp.emoji;
+  $("special-name").textContent = sp.name;
+  $("special-why").textContent = sp.why;
+  $("special-how").textContent = sp.how;
+}
+function mountSpecials() {
+  $("special-next")?.addEventListener("click", () => {
+    showSpecial(specialAt + 1);
+    if (!reduceMotion) replay($("menu-card"), "swap");
+  });
+}
+
 // ---------- Paper calendar on the truck mirrors the real one ----------
 function mirrorCalendar() {
   const body = $("cal-body"), label = $("month-label"), days = $("mini-days"), month = $("mini-month");
   if (!body || !days) return;
   const draw = () => {
     month.textContent = label.textContent;
-    const cells = [];
+    const cells = ["M", "T", "W", "T", "F", "S", "S"].map((d) => `<b class="wd">${d}</b>`);
     body.querySelectorAll("td").forEach((td) => {
       const b = td.querySelector(".day");
       if (!b) return cells.push('<b class="blank"></b>');
@@ -208,9 +228,11 @@ function mirrorBoard() {
       const name = li.querySelector(".nm")?.firstChild?.textContent ?? "";
       const streak = li.querySelector(".stats b")?.textContent?.replace("🔥", "").trim() ?? "0";
       const cls = (li.classList.contains("me") ? "me " : "") + (li.classList.contains("out") ? "out" : "");
-      return `<span class="${cls}">${esc(rank)} <em>${esc(name)}</em><small>🔥${esc(streak)}</small></span>`;
+      const flames = "🔥".repeat(Math.min(3, Number(streak) || 0)) || "·";
+      return `<span class="${cls}">${esc(rank)}<i>${esc(name.charAt(0).toUpperCase())}</i><em>${esc(name)}</em><small>${flames}</small></span>`;
     });
-    rows.innerHTML = html.join("") || "<span><em>No one yet — invite a friend!</em></span>";
+    rows.innerHTML = '<span class="chalk-cols"><em>Name</em><small>streak</small></span>'
+      + (html.join("") || "<span><em>No one yet — invite a friend!</em></span>");
   };
   new MutationObserver(draw).observe(list, { childList: true, subtree: true });
   draw();

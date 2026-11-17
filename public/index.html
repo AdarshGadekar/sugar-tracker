@@ -9,10 +9,11 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍨</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Cabin+Sketch:wght@400;700&family=Yatra+One&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Cabin+Sketch:wght@400;700&family=Permanent+Marker&family=Yatra+One&display=swap" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="retro.css" />
   <link rel="stylesheet" href="truck.css" />
+  <script src="mode.js"></script>
 </head>
 <body>
   <!-- Preloader: a laddoo making a run for it (hidden by app.js once the first screen is ready) -->
@@ -49,6 +50,10 @@
       <div class="account" id="account" hidden>
         <button id="chat-toggle" class="secondary small chat-toggle" type="button" aria-expanded="false" aria-controls="chat">
           💬 Chat<span id="chat-badge" class="chat-badge" hidden>0</span>
+        </button>
+        <button id="mode-toggle" class="mode-switch" type="button" role="switch" aria-checked="true" aria-label="Night mode">
+          <span class="ms-stars" aria-hidden="true"></span><span class="ms-clouds" aria-hidden="true"></span>
+          <span class="ms-knob" aria-hidden="true"></span>
         </button>
         <span class="avatar" id="avatar" aria-hidden="true"></span>
         <button id="signout" class="secondary small" type="button">Sign out</button>
@@ -110,14 +115,27 @@
                srcset="img/truck-toon-1600.jpg 1600w, img/truck-toon.jpg 2752w"
                sizes="(max-width: 700px) 1100px, 100vw" width="2752" height="1376"
                alt="Your food truck, parked at night" />
+          <img class="scene-art scene-day" src="img/truck-toon-day-1600.jpg"
+               srcset="img/truck-toon-day-1600.jpg 1600w, img/truck-toon-day.jpg 2752w"
+               sizes="(max-width: 700px) 1100px, 100vw" width="2752" height="1376" loading="lazy"
+               alt="" aria-hidden="true" />
           <span class="glow window-glow" aria-hidden="true"></span>
           <span class="glow moon" aria-hidden="true"></span>
           <span class="glow lamp l1" aria-hidden="true"></span><span class="glow lamp l2" aria-hidden="true"></span>
           <span class="smoke" aria-hidden="true"><i></i><i></i><i></i></span>
+          <!-- Daytime: the truck only serves at night, so the shutter is down -->
+          <span class="day-shutter" aria-hidden="true">
+            <span class="graffiti"><b>NO SPOILERS!</b><i>today's sugar story drops tomorrow</i><em>✗ no peeking</em></span>
+          </span>
           <span class="twinkle" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
 
           <!-- Lives: app.js still renders hearts here for screen readers; the sticker shows them on the truck -->
           <div id="hearts" class="balloons" aria-live="polite"></div>
+
+          <!-- Roof sign: tap for a no-added-sugar treat idea -->
+          <button class="spot spot-sign" id="spot-sign" type="button" data-open="special" aria-label="See today's no-sugar special">
+            <span class="spot-tag">Today's special ✨</span>
+          </button>
 
           <!-- Paper calendar hanging off the awning -->
           <button class="spot spot-cal" id="spot-cal" type="button" data-open="cal" aria-label="Open your calendar">
@@ -211,6 +229,19 @@
             <ol id="board-list" class="board-list"></ol>
             <p id="board-empty" class="muted small-text" hidden>No one else here yet — invite a friend!</p>
           </div>
+        </div>
+        <div class="closeup-item" data-item="special" role="dialog" aria-label="No-sugar special" hidden>
+          <article class="menu-card" id="menu-card">
+            <p class="menu-kicker" id="special-kicker">Today's no-sugar special</p>
+            <div class="menu-emoji" id="special-emoji" aria-hidden="true"></div>
+            <h2 class="menu-name" id="special-name"></h2>
+            <p class="menu-why" id="special-why"></p>
+            <p class="menu-how"><strong>How:</strong> <span id="special-how"></span></p>
+            <div class="menu-foot">
+              <span class="menu-stamp">No added sugar</span>
+              <button type="button" class="secondary" id="special-next">Another one 🔄</button>
+            </div>
+          </article>
         </div>
         <button type="button" class="closeup-close" data-close aria-label="Put it back">✕</button>
       </div>
