@@ -155,19 +155,6 @@
             <span class="spot-tag">Leaderboard</span>
           </button>
 
-          <!-- Driver's door window = chat. It's closed; pull the glass down to open the chat -->
-          <button class="spot spot-chat" id="spot-chat" type="button" aria-controls="chat" aria-expanded="false" aria-label="Pull the window down to open the chat">
-            <span class="frame">
-              <span class="pane">
-                <span class="pane-grip" aria-hidden="true"></span>
-                <span class="pane-label">💬 Chat <b id="glass-count" hidden></b></span>
-                <span class="pane-msg" id="glass-msg">Pull the window down</span>
-                <span class="pane-pull" aria-hidden="true">▼ pull</span>
-              </span>
-            </span>
-            <span class="spot-tag">Pull down to chat</span>
-          </button>
-
           <!-- Service bell: rings when a message comes in -->
           <button class="spot spot-bell" id="bell" type="button" aria-label="New messages — open the chat">
             <span class="ring-waves" aria-hidden="true"><i></i><i></i></span>
@@ -181,7 +168,7 @@
 
         </div>
       </div>
-      <p class="scene-hint" aria-hidden="true">Tap the calendar or the chalkboard · pull the door window down to chat</p>
+      <p class="scene-hint" aria-hidden="true">Tap the calendar, the chalkboard or the sign · talk to the vendor to chat</p>
       <nav class="scene-dock" aria-label="Truck parts">
         <button type="button" class="secondary small" data-open="cal">📅 Calendar</button>
         <button type="button" class="secondary small" data-open="board">🏆 Board</button>

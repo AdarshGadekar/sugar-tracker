@@ -136,13 +136,21 @@
 /* ---------- Hotspots (the clickable truck parts) ---------- */
 .scene .spot, .scene .spot:hover, .scene .spot:active, .scene .spot:focus-visible {
   position: absolute; padding: 0; margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
-  color: inherit; font: inherit; transform: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  color: inherit; font: inherit; transform: none; cursor: pointer; -webkit-tap-highlight-color: transparent; overflow: visible;
 }
 .scene .spot:focus-visible { outline: .2cqw solid #ffd75e; outline-offset: .3cqw; }
-.spot-tag { position: absolute; left: 50%; top: 100%; translate: -50% .4cqw; padding: .2cqw .7cqw; white-space: nowrap;
-  font: 700 max(.75cqw, 11px)/1.4 var(--font, inherit); color: #1c1407; background: #ffd75e; border-radius: 99px;
-  box-shadow: 0 .15cqw .5cqw rgb(0 0 0 / .4); opacity: 0; transition: opacity .2s, translate .2s; pointer-events: none; }
-.spot:hover .spot-tag, .spot:focus-visible .spot-tag { opacity: 1; translate: -50% .7cqw; }
+/* hover labels are little wooden signs, nailed on */
+.spot-tag { position: absolute; left: 50%; top: 100%; translate: -50% .2cqw; rotate: -3deg; padding: .3cqw 1cqw; white-space: nowrap;
+  font: 400 max(.82cqw, 12px)/1.3 var(--display, inherit); letter-spacing: .04em; color: #fff3d6; text-shadow: .08cqw .08cqw 0 #2a1608;
+  background:
+    radial-gradient(circle at .5cqw 50%, #2a1608 .14cqw, transparent .17cqw),
+    radial-gradient(circle at calc(100% - .5cqw) 50%, #2a1608 .14cqw, transparent .17cqw),
+    repeating-linear-gradient(0deg, #8a5426 0 .5cqw, #7c4a20 .5cqw .55cqw),
+    #8a5426;
+  border: .14cqw solid #2a1608; border-radius: .25cqw; box-shadow: .15cqw .25cqw 0 rgb(0 0 0 / .35);
+  opacity: 0; transform-origin: 50% 0; transform: rotate(-8deg) scale(.8);
+  transition: opacity .2s, transform .35s cubic-bezier(.34, 1.56, .64, 1); pointer-events: none; }
+.spot:hover .spot-tag, .spot:focus-visible .spot-tag { opacity: 1; transform: none; }
 
 /* chat lives on the truck now (door window, bell, phone dock), so the header button goes */
 #chat-toggle { display: none; }
@@ -202,32 +210,6 @@
 .chalk-rows small { font-size: .5cqw; opacity: .75; }
 .spot-board:hover .chalk { box-shadow: inset 0 0 1cqw rgb(0 0 0 / .6), 0 0 1.4cqw rgb(255 215 94 / .4); }
 
-/* driver's door window = chat: a closed glass pane, pull it down into the door to open the chat */
-.scene .spot-chat { left: 54.8%; top: 25.73%; width: 9.38%; height: 22.38%; }
-.frame { position: absolute; inset: 0; overflow: hidden; border-radius: 1.2cqw .3cqw .2cqw .2cqw; }
-.pane { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  gap: .45cqw; padding: .9cqw .6cqw .8cqw; color: #fff; text-align: center;
-  background:
-    linear-gradient(122deg, transparent 18%, rgb(255 255 255 / .38) 19% 25%, transparent 26% 33%, rgb(255 255 255 / .2) 34% 36%, transparent 37%),
-    linear-gradient(170deg, rgb(170 210 245 / .5), rgb(120 160 210 / .36) 55%, rgb(150 190 235 / .46));
-  border-top: .35cqw solid #2c2f3a; box-shadow: inset 0 0 1.2cqw rgb(255 255 255 / .25);
-  backdrop-filter: blur(.25cqw); -webkit-backdrop-filter: blur(.25cqw);
-  transition: transform .6s cubic-bezier(.5, 0, .25, 1); }
-.pane-grip { position: absolute; top: .2cqw; left: 50%; width: 2.4cqw; height: .55cqw; translate: -50% 0;
-  border-radius: 0 0 .4cqw .4cqw; background: #2c2f3a; }
-.pane-label { display: inline-flex; align-items: center; gap: .35cqw; padding: .25cqw .7cqw; border-radius: 99px;
-  font: 800 .78cqw/1.2 var(--font, inherit); color: #1c1407; background: #ffd75e; box-shadow: 0 .15cqw .35cqw rgb(0 0 0 / .35); }
-.pane-label b { padding: 0 .35cqw; font-size: .6cqw; border-radius: 99px; background: #e0218a; color: #fff; }
-.pane-msg { max-width: 100%; padding: .3cqw .55cqw; font: 600 .55cqw/1.3 var(--font, inherit); border-radius: .4cqw;
-  color: #fff; background: rgb(14 24 50 / .55); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.pane-pull { font: 800 .55cqw/1 var(--font, inherit); color: #fff; text-shadow: 0 .1cqw .2cqw rgb(0 0 0 / .6);
-  animation: nudge 2.4s ease-in-out infinite; }
-@keyframes nudge { 0%, 70%, 100% { translate: 0 0; } 80% { translate: 0 .35cqw; } 90% { translate: 0 0; } }
-.spot-chat:hover .pane { transform: translateY(6%); }                 /* gives a little when you reach for it */
-.spot-chat.dragging .pane { transition: none; }
-.spot-chat.down .pane { transform: translateY(94%); }                 /* rolled down into the door: chat is open */
-.spot-chat.down .spot-tag { display: none; }
-
 /* service bell (painted above the chalkboard): rings when a message comes in */
 .scene .spot-bell { left: 47.24%; top: 18.17%; width: 3.63%; height: 8%; border-radius: 50%; }
 .ring-waves i { position: absolute; top: 20%; width: 1.3cqw; height: 3cqw; border: .2cqw solid #ffe27a; opacity: 0; pointer-events: none; }
@@ -240,6 +222,80 @@
   font: 800 .7cqw/1.2 var(--font, inherit); color: #fff; background: #e0218a; border: .12cqw solid #2a0d18; }
 .moon { left: 88.5%; top: 8.4%; width: 9cqw; height: 9cqw; translate: -50% -50%;
   background: radial-gradient(closest-side, rgb(255 250 210 / .35), transparent); animation: lamp 6s ease-in-out infinite; }
+
+/* ---------- The vendor = chat ---------- */
+.scene .vendor { cursor: pointer; }
+.scene .vendor svg { width: 100%; height: 100%; display: block; overflow: visible; filter: drop-shadow(0 .2cqw .3cqw rgb(0 0 0 / .35)); }
+.scene .vendor-night { left: 21.44%; top: 36.34%; width: 7.63%; height: 17.8%; transition: opacity .6s, transform .6s; }
+.scene .vendor-day { left: 5.09%; top: 57.41%; width: 8.36%; height: 37.06%; opacity: 0; pointer-events: none; transition: opacity .6s; }
+[data-mode="day"] .scene .vendor-night { opacity: 0; transform: translateY(30%); pointer-events: none; }
+[data-mode="day"] .scene .vendor-day { opacity: 1; pointer-events: auto; transition-delay: .5s; }
+.vendor .v-head { transform-box: fill-box; transform-origin: 50% 90%; animation: v-bob 3.6s ease-in-out infinite; }
+@keyframes v-bob { 0%, 100% { rotate: -2deg; } 50% { rotate: 2deg; translate: 0 -2px; } }
+.vendor .v-eyes { transform-box: fill-box; transform-origin: 50% 50%; animation: v-blink 4.2s infinite; }
+@keyframes v-blink { 0%, 93%, 100% { scale: 1 1; } 95% { scale: 1 .1; } }
+.vendor-day .v-eyes { animation: v-blink 4.2s infinite, v-peek 6s ease-in-out infinite; }
+@keyframes v-peek { 0%, 40%, 100% { translate: 0 0; } 50%, 65% { translate: -5px 0; } 75%, 90% { translate: 5px 0; } }
+.vendor .v-arm { transform-box: view-box; transform-origin: 176px 196px; rotate: 128deg; transition: rotate .35s cubic-bezier(.34, 1.56, .64, 1); }
+.vendor-night:hover .v-arm, .vendor-night:focus-visible .v-arm, .vendor-night.has-news .v-arm { rotate: 0deg; animation: v-wave .7s .35s ease-in-out infinite alternate; }
+.vendor-night.wave .v-arm { rotate: 0deg; animation: v-wave .35s ease-in-out 4 alternate; }
+@keyframes v-wave { from { rotate: -14deg; } to { rotate: 10deg; } }
+.vendor .v-paper { transition: transform .4s cubic-bezier(.34, 1.4, .64, 1); }
+.vendor-day:hover .v-paper, .vendor-day:focus-visible .v-paper, .vendor-day.has-news .v-paper, .vendor-day.wave .v-paper { transform: translateY(70px); }
+.vendor-day.has-news { animation: v-hop .9s ease-in-out infinite; }
+@keyframes v-hop { 0%, 60%, 100% { translate: 0 0; } 75% { translate: 0 -.5cqw; } }
+
+/* his speech bubble: hover lines, or how many new messages */
+.vendor-bubble { position: absolute; left: 25.3%; top: 30.5%; translate: -50% -100%; z-index: 2; max-width: 16cqw; pointer-events: none;
+  padding: .45cqw .8cqw; font: 700 max(.82cqw, 12px)/1.25 var(--font, inherit); color: #1c1407; text-align: center;
+  background: #fff; border: .15cqw solid #1c1407; border-radius: .9cqw; box-shadow: .15cqw .25cqw 0 rgb(0 0 0 / .3);
+  opacity: 0; scale: .6; transform-origin: 30% 100%; transition: opacity .2s, scale .3s cubic-bezier(.34, 1.56, .64, 1); }
+.vendor-bubble::after { content: ""; position: absolute; left: 30%; top: 100%; width: .9cqw; height: .9cqw; translate: 0 -55%;
+  rotate: 45deg; background: #fff; border-right: .15cqw solid #1c1407; border-bottom: .15cqw solid #1c1407; }
+.vendor-bubble.show { opacity: 1; scale: 1; }
+[data-mode="day"] .vendor-bubble { left: 9.4%; top: 52%; }
+
+/* ---------- Street life ---------- */
+/* a dog trots past every so often (tap it) */
+.walker { position: absolute; left: 0; top: 88.5%; width: 4.6cqw; height: 3cqw; pointer-events: none;
+  animation: walk-by 42s linear infinite; animation-delay: 6s; }
+@keyframes walk-by { 0% { translate: -6cqw 0; } 30% { translate: 104cqw 0; } 30.01%, 100% { translate: 104cqw 0; visibility: hidden; } }
+.walker .dog { position: absolute; inset: 0; padding: 0; border: 0; background: none; box-shadow: none; cursor: pointer; pointer-events: auto; }
+.walker .dog:hover, .walker .dog:active { background: none; box-shadow: none; transform: none; }
+.walker .dog svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 .15cqw .15cqw rgb(0 0 0 / .35)); }
+.dog .d-leg { transform-box: fill-box; transform-origin: 50% 0; animation: d-step .38s ease-in-out infinite alternate; }
+.dog .d-leg.b { animation-direction: alternate-reverse; }
+@keyframes d-step { from { rotate: -16deg; } to { rotate: 16deg; } }
+.dog .d-tail { transform-box: fill-box; transform-origin: 100% 100%; animation: d-wag .3s ease-in-out infinite alternate; }
+@keyframes d-wag { from { rotate: -12deg; } to { rotate: 14deg; } }
+.dog.yap .d-head { transform-box: fill-box; transform-origin: 0 100%; animation: d-yap .18s ease-in-out 4 alternate; }
+@keyframes d-yap { to { rotate: -14deg; } }
+.walker:has(.dog:hover) { animation-play-state: paused; }
+
+/* a crow on the roof sign at night; poke it and it flies off (back in a bit) */
+.scene .crow { position: absolute; left: 35.6%; top: 4.3%; width: 3.6cqw; height: 3.1cqw; padding: 0; border: 0; background: none;
+  box-shadow: none; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .6s; }
+.scene .crow:hover, .scene .crow:active { background: none; box-shadow: none; transform: none; }
+.crow svg { width: 100%; height: 100%; overflow: visible; }
+[data-mode="night"] .scene .crow { opacity: 1; pointer-events: auto; }
+.crow .c-head { transform-box: fill-box; transform-origin: 30% 80%; animation: c-look 5s ease-in-out infinite; }
+@keyframes c-look { 0%, 40%, 100% { rotate: 0deg; } 50%, 70% { rotate: -18deg; } }
+[data-mode="night"] .scene .crow.gone { animation: crow-fly 1.6s ease-in forwards; pointer-events: none; }
+.crow.gone .c-wing { transform-box: fill-box; transform-origin: 70% 80%; animation: c-flap .12s ease-in-out infinite alternate; }
+@keyframes c-flap { to { scale: 1 -.6; } }
+@keyframes crow-fly { 15% { translate: 0 -.6cqw; } 100% { translate: 22cqw -12cqw; opacity: 0; } }
+
+.critter-bubble { position: absolute; translate: -50% -110%; z-index: 2; pointer-events: none; padding: .3cqw .7cqw; white-space: nowrap;
+  font: 700 max(.75cqw, 11px)/1.2 var(--font, inherit); color: #1c1407; background: #fff; border: .14cqw solid #1c1407;
+  border-radius: .8cqw; opacity: 0; }
+.critter-bubble.show { animation: critter-say 1.8s ease-out both; }
+@keyframes critter-say { 0% { opacity: 0; scale: .5; } 12% { opacity: 1; scale: 1.08; } 20%, 80% { opacity: 1; scale: 1; } 100% { opacity: 0; } }
+
+/* at night the city behind the truck has its lights on */
+.city-lights { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 1.2s;
+  mix-blend-mode: screen; }
+[data-mode="night"] .city-lights { opacity: 1; animation: city-flicker 9s steps(1) infinite; }
+@keyframes city-flicker { 0%, 100% { opacity: 1; } 47% { opacity: .9; } 49% { opacity: 1; } 81% { opacity: .94; } }
 
 /* stickers on the body: lives left + streak (cover the painted ones) */
 .sticker { position: absolute; translate: -50% -50%; display: grid; place-items: center; padding: .25cqw .55cqw;
@@ -449,6 +505,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .balloon.alive, .scene .spot-cal, .spot-sign::after, .day-shutter, .scene-day, .smoke i, .twinkle i, .lamp, .moon, .window-glow, .pane-pull, .ring-waves i { animation: none !important; }
-  .pane, .closeup-item, .day-shutter, .scene-day { transition: none !important; }
+  .balloon.alive, .scene .spot-cal, .spot-sign::after, .day-shutter, .scene-day, .smoke i, .twinkle i, .lamp, .moon, .window-glow, .ring-waves i,
+  .vendor .v-head, .vendor .v-eyes, .vendor .v-arm, .vendor-day, .walker, .dog *, .crow *, .city-lights { animation: none !important; }
+  .walker { display: none; }
+  .closeup-item, .day-shutter, .scene-day, .vendor, .v-paper, .v-arm { transition: none !important; }
 }

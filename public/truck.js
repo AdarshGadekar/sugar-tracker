@@ -1,9 +1,10 @@
 // Food truck at night. Purely presentational: it drives the app through its existing
-// controls (#chat-toggle, #prev/#next, .sdk-toggle) and mirrors existing elements (#cal-body,
-// #board-list, #chat-list, #chat-badge) onto the painted truck. chat.js and the data logic
+// controls (#chat-toggle, #prev/#next) and mirrors existing elements (#cal-body,
+// #board-list, #chat-badge) onto the painted truck. chat.js and the data logic
 // don't need to know the truck exists.
 
 import { SPECIALS, todaysIndex } from "./specials.js";
+import { buildStreet } from "./street.js";
 
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = (id) => document.getElementById(id);
@@ -18,7 +19,7 @@ function replay(el, cls) {
 export function mountTruck() {
   if (!$("truck")) return;
   mountCloseups();
-  mountChatGlass();
+  mountVendor();
   mirrorCalendar();
   mirrorBoard();
   mountSpecials();
@@ -101,81 +102,83 @@ function lift(el, a, reverse) {
   });
 }
 
-// ---------- Driver's door window = chat. It's closed: tap it, or pull the glass down ----------
-function mountChatGlass() {
-  const spot = $("spot-chat"), panel = $("chat"), toggle = $("chat-toggle"), bell = $("bell");
-  const glass = spot?.querySelector(".pane");
-  if (!spot || !panel || !toggle) return;
+// ---------- The vendor = chat. Talk to him (tap him) and the chat opens ----------
+const VENDOR_LINES = {
+  night: ["Kya haal? Tap to chat 💬", "Gossip's hot tonight 🔥", "Psst… your friends are talking 👀"],
+  day: ["Shop's shut. Gossip's open 💬", "Reading the paper… or chat? 📰", "Tap me, I'm bored ☀️"],
+};
+function mountVendor() {
+  const panel = $("chat"), toggle = $("chat-toggle"), bell = $("bell");
+  if (!panel || !toggle) return;
   panel.classList.add("hud");
-  const isOpen = () => !panel.hidden;
+  const st = buildStreet($("truck"));
+  const isDay = () => document.documentElement.dataset.mode === "day";
+  const current = () => st.vendors.find((v) => v.classList.contains(isDay() ? "vendor-day" : "vendor-night"));
+  let unread = 0, line = 0, hovering = false;
 
-  let suppress = false;
-  spot.addEventListener("click", () => { if (suppress) { suppress = false; return; } toggle.click(); });
-
-  let startY = null, dy = 0;
-  spot.addEventListener("pointerdown", (e) => {
-    if (isOpen()) return;
-    startY = e.clientY; dy = 0;
-    spot.setPointerCapture(e.pointerId);
-    spot.classList.add("dragging");
-  });
-  spot.addEventListener("pointermove", (e) => {
-    if (startY === null) return;
-    dy = Math.max(0, e.clientY - startY);
-    glass.style.transform = `translateY(${Math.min(dy, spot.clientHeight * 0.94)}px)`;
-  });
-  const end = () => {
-    if (startY === null) return;
-    startY = null;
-    spot.classList.remove("dragging");
-    glass.style.transform = "";
-    if (dy > 6) {                       // it was a pull, not a tap
-      suppress = true;                  // swallow the click that follows this pointerup
-      setTimeout(() => (suppress = false), 350);
-      if (dy > spot.clientHeight * 0.2) toggle.click();
-    }
+  const say = () => {
+    const text = unread ? `${unread} new message${unread === 1 ? "" : "s"}! 👀` : VENDOR_LINES[isDay() ? "day" : "night"][line];
+    st.bubble.textContent = text;
+    st.bubble.classList.toggle("show", hovering || unread > 0);
+    st.vendors.forEach((v) => v.classList.toggle("has-news", unread > 0));
   };
-  spot.addEventListener("pointerup", end);
-  spot.addEventListener("pointercancel", end);
+  st.vendors.forEach((v) => {
+    v.addEventListener("click", () => toggle.click());
+    v.addEventListener("mouseenter", () => { hovering = true; line = (line + 1) % 3; say(); });
+    v.addEventListener("mouseleave", () => { hovering = false; say(); });
+    v.addEventListener("focus", () => { hovering = true; say(); });
+    v.addEventListener("blur", () => { hovering = false; say(); });
+  });
+  new MutationObserver(say).observe(document.documentElement, { attributes: true, attributeFilter: ["data-mode"] });
 
   const sync = () => {
-    const open = isOpen();
-    if (open === spot.classList.contains("down")) return;
-    spot.classList.toggle("down", open);
-    spot.setAttribute("aria-expanded", String(open));
-    if (open) { closeCloseup(); popFrom(spot, panel); }
+    const open = !panel.hidden;
+    st.vendors.forEach((v) => v.setAttribute("aria-expanded", String(open)));
+    if (open) { closeCloseup(); popFrom(current(), panel); }
   };
   new MutationObserver(sync).observe(panel, { attributes: true, attributeFilter: ["hidden"] });
-  sync();
 
-  // the bell over the counter rings for new messages (chat.js pings #chat-toggle); tap it to open the chat
+  // the bell rings for new messages (chat.js pings #chat-toggle); tap it to open the chat too
   bell?.addEventListener("click", () => toggle.click());
   new MutationObserver(() => {
-    if (toggle.classList.contains("ping")) replay(bell, "ring");
+    if (toggle.classList.contains("ping")) { replay(bell, "ring"); st.vendors.forEach((v) => replay(v, "wave")); }
   }).observe(toggle, { attributes: true, attributeFilter: ["class"] });
 
-  // unread count + newest message, shown on the window and the bell
-  const badge = $("chat-badge"), count = $("glass-count"), msg = $("glass-msg"), list = $("chat-list"), bellCount = $("bell-count");
+  const badge = $("chat-badge"), bellCount = $("bell-count");
   const mirror = () => {
-    if (badge) {
-      count.textContent = bellCount.textContent = badge.textContent;
-      count.hidden = bellCount.hidden = badge.hidden;
-      bell?.classList.toggle("has-news", !badge.hidden);
-    }
-    const last = [...(list?.querySelectorAll(".msg:not(.system)") ?? [])].pop();
-    const who = last?.querySelector(".msg-head strong, .msg-head b, .msg-head span")?.textContent?.trim();
-    const text = last?.querySelector(".msg-text")?.textContent?.trim();
-    msg.textContent = text ? (who ? `${who}: ${text}` : text) : "Pull the window down";
+    if (!badge) return;
+    unread = badge.hidden ? 0 : parseInt(badge.textContent, 10) || 9;
+    bellCount.textContent = badge.textContent;
+    bellCount.hidden = badge.hidden;
+    bell?.classList.toggle("has-news", !badge.hidden);
+    say();
   };
   if (badge) new MutationObserver(mirror).observe(badge, { attributes: true, childList: true, characterData: true, subtree: true });
-  if (list) new MutationObserver(mirror).observe(list, { childList: true });
   mirror();
+
+  // street life: the dog barks, the crow caws and flies off
+  const pop = (el, text) => {
+    const r = el.getBoundingClientRect(), s = $("truck").getBoundingClientRect();
+    st.critterBubble.textContent = text;
+    st.critterBubble.style.left = `${((r.left + r.width / 2 - s.left) / s.width) * 100}%`;
+    st.critterBubble.style.top = `${((r.top - s.top) / s.height) * 100}%`;
+    replay(st.critterBubble, "show");
+  };
+  const barks = ["Woof! 🐶", "Woof woof! (sugar-free since birth)", "Arf! Got a biscuit? No? Fine."];
+  let bark = 0;
+  st.dog.addEventListener("click", () => { pop(st.dog, barks[bark++ % barks.length]); replay(st.dog, "yap"); });
+  st.crow.addEventListener("click", () => {
+    if (st.crow.classList.contains("gone")) return;
+    pop(st.crow, "Caw! 🍬? Nope.");
+    st.crow.classList.add("gone");
+    setTimeout(() => st.crow.classList.remove("gone"), 25000);   // it comes back
+  });
 }
 
-/** The chat panel grows out of the door window. */
+/** The chat panel grows out of whatever opened it (the vendor). */
 function popFrom(from, panel) {
-  const a = from.getBoundingClientRect();
-  if (a.bottom < 0 || a.top > innerHeight || a.right < 0 || a.left > innerWidth) return; // window off-screen: plain open
+  const a = from?.getBoundingClientRect();
+  if (!a || !a.width || a.bottom < 0 || a.top > innerHeight || a.right < 0 || a.left > innerWidth) return; // off-screen: plain open
   lift(panel, a, false);
 }
 
