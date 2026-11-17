@@ -6,6 +6,7 @@ import { mountSudoku } from "./sudoku.js";
 import { CLEAN, SLIP, LAST_LIFE, GAME_OVER, TODAY_LINES, FUTURE_LINES, pick } from "./messages.js";
 import { createChat } from "./chat.js";
 import { mountDiwali, celebrate } from "./diwali.js";
+import { mountTruck, stampDay, flipBoard } from "./truck.js";
 
 mountSudoku(document.getElementById("sudoku"));
 mountDiwali();
@@ -52,6 +53,7 @@ if (useMock) {
 }
 
 const chat = createChat({ supabase, $, replay });
+mountTruck();
 
 const state = {
   user: null,
@@ -340,6 +342,7 @@ async function onDayClick(iso) {
     return loadMarks(); // resync with the server's truth
   }
   state.marks[iso] = hadSugar;
+  await stampDay(document.querySelector(`.day[data-iso="${iso}"]`), hadSugar); // thunk! paint on impact
   render({ justMarked: iso });
   loadBoard();
   chat.refresh(); // pick up any milestone post
@@ -412,7 +415,14 @@ function displayName(user) {
   return user?.user_metadata?.name || user?.email?.split("@")[0] || "Player";
 }
 
-let shownLives = null; // lives on screen last render, to animate the heart that just broke
+// One heart-shaped balloon on a string (the string is tied at the bottom, to the truck).
+const BALLOON = '<svg viewBox="0 0 60 130" aria-hidden="true">'
+  + '<path class="b-string" d="M30 59c-7 12 7 22 0 35s7 22 0 36"/>'
+  + '<g class="b-ball"><path class="b-heart" d="M30 52C12 38 2 28 2 17 2 8 9 2 17 2c6 0 11 4 13 9 2-5 7-9 13-9 8 0 15 6 15 15 0 11-10 21-28 35z"/>'
+  + '<path class="b-knot" d="M25.5 59l4.5-7 4.5 7z"/><path class="b-shine" d="M11 15c1-5 5-8 10-7"/></g></svg>'
+  + '<span class="pop">POP!</span>';
+
+let shownLives = null; // lives on screen last render, to pop (or re-inflate) the right balloon
 function renderPlayer(used, locked) {
   const lives = chancesLeft(state.marks);
   $("player-name").textContent = displayName(state.user);
@@ -422,14 +432,18 @@ function renderPlayer(used, locked) {
   for (let i = 0; i < MAX_SUGAR; i++) {
     const h = document.createElement("span");
     const alive = i < lives;
-    h.className = "heart" + (alive ? " alive" : " lost");
+    h.className = "balloon" + (alive ? " alive" : " lost");
     h.style.setProperty("--i", i);
-    h.textContent = alive ? "❤️" : "💔";
-    if (!alive && shownLives !== null && i >= lives && i < shownLives) h.classList.add("breaking");
+    h.innerHTML = BALLOON;
+    if (shownLives !== null) {
+      if (!alive && i >= lives && i < shownLives) h.classList.add("popping");   // just lost this one
+      if (alive && i >= shownLives) h.classList.add("inflating");              // a gift brought it back
+    }
     hearts.append(h);
   }
   hearts.setAttribute("aria-label", `${lives} of ${MAX_SUGAR} lives left`);
   hearts.classList.toggle("dead", locked);
+  $("truck").classList.toggle("is-locked", locked);
   if (locked && shownLives !== null && !hearts.dataset.over) {
     hearts.dataset.over = "1";
     replay(hearts, "shake");
@@ -484,6 +498,7 @@ function render(opts = {}) {
         const b = document.createElement("button");
         const isToday = iso === today, isFuture = iso > today;
         b.className = "day";
+        b.dataset.iso = iso;
         b.style.setProperty("--i", n++);
         const num = Object.assign(document.createElement("span"), { className: "num", textContent: Number(iso.slice(8)) });
         b.append(num);
@@ -522,11 +537,8 @@ function render(opts = {}) {
   }
 
   body.classList.remove("enter", "from-left", "from-right");
-  if (opts.animate || opts.dir) {
-    if (opts.dir) body.classList.add(opts.dir > 0 ? "from-right" : "from-left");
-    replay(body);
-    replay($("month-label"), "swap");
-  }
+  if (opts.animate) { replay(body); flipBoard(true); }   // board drops onto its hooks
+  if (opts.dir) flipBoard();                             // swing + page flip over the rings
   if (marked && state.marks[opts.justMarked] === false) burst(marked);
 }
 

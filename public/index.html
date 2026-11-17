@@ -9,9 +9,10 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍨</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Yatra+One&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Cabin+Sketch:wght@400;700&family=Yatra+One&display=swap" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="retro.css" />
+  <link rel="stylesheet" href="truck.css" />
 </head>
 <body>
   <!-- Preloader: a laddoo making a run for it (hidden by app.js once the first screen is ready) -->
@@ -100,45 +101,118 @@
       </div>
     </section>
 
-    <!-- App -->
-    <section id="app-view" class="app-grid" hidden>
-      <div id="status" class="card player">
-        <div id="player-name" class="player-name"></div>
-        <div id="hearts" class="hearts" aria-live="polite"></div>
-        <div id="chances" class="muted"></div>
-        <div id="streak" class="streak" hidden></div>
-      </div>
-      <div class="col-main">
-      <div id="locked-banner" class="banner" hidden>
-        Your tracker is locked — you had sugar more than 3 times. You can still view your history.
-      </div>
+    <!-- App: a food truck parked at night. The art is one picture; every live part of the app
+         sits on top of it at the spot where it is painted (positions are % of the picture). -->
+    <section id="app-view" class="scene-view" hidden>
+      <div class="scene-wrap" id="scene-wrap">
+        <div class="scene" id="truck">
+          <img class="scene-art" src="img/truck-toon-1600.jpg"
+               srcset="img/truck-toon-1600.jpg 1600w, img/truck-toon.jpg 2752w"
+               sizes="(max-width: 700px) 1100px, 100vw" width="2752" height="1376"
+               alt="Your food truck, parked at night" />
+          <span class="glow window-glow" aria-hidden="true"></span>
+          <span class="glow moon" aria-hidden="true"></span>
+          <span class="glow lamp l1" aria-hidden="true"></span><span class="glow lamp l2" aria-hidden="true"></span>
+          <span class="smoke" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="twinkle" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
 
-      <div class="card cal-card">
-        <div class="cal-nav">
-          <button id="prev" class="secondary" aria-label="Previous month">‹</button>
-          <h2 id="month-label"></h2>
-          <button id="next" class="secondary" aria-label="Next month">›</button>
-        </div>
-        <table class="cal">
-          <thead><tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr></thead>
-          <tbody id="cal-body"></tbody>
-        </table>
-        <div class="legend">
-          <span><i class="dot no"></i> No sugar</span>
-          <span><i class="dot yes"></i> Sugar</span>
-          <span><i class="dot open"></i> Not marked</span>
-          <span>⏳ Today unlocks tomorrow</span>
-        </div>
-      </div>
-      </div>
+          <!-- Lives: app.js still renders hearts here for screen readers; the sticker shows them on the truck -->
+          <div id="hearts" class="balloons" aria-live="polite"></div>
 
-      <div class="card board">
-        <div class="board-head">
-          <h2>How everyone's doing</h2>
-          <span class="muted small-text">🔥 streak · ✅ clean days</span>
+          <!-- Paper calendar hanging off the awning -->
+          <button class="spot spot-cal" id="spot-cal" type="button" data-open="cal" aria-label="Open your calendar">
+            <span class="paper" id="mini-cal">
+              <span class="paper-head" id="mini-month"></span>
+              <span class="paper-grid" id="mini-days"></span>
+            </span>
+            <span class="spot-tag">Calendar</span>
+          </button>
+
+          <!-- Chalkboard next to the serving window -->
+          <button class="spot spot-board" id="spot-board" type="button" data-open="board" aria-label="Open the leaderboard">
+            <span class="chalk">
+              <span class="chalk-title">How everyone's doing</span>
+              <span class="chalk-rows" id="mini-board"></span>
+            </span>
+            <span class="spot-tag">Leaderboard</span>
+          </button>
+
+          <!-- Driver's door window = chat. It's closed; pull the glass down to open the chat -->
+          <button class="spot spot-chat" id="spot-chat" type="button" aria-controls="chat" aria-expanded="false" aria-label="Pull the window down to open the chat">
+            <span class="frame">
+              <span class="pane">
+                <span class="pane-grip" aria-hidden="true"></span>
+                <span class="pane-label">💬 Chat <b id="glass-count" hidden></b></span>
+                <span class="pane-msg" id="glass-msg">Pull the window down</span>
+                <span class="pane-pull" aria-hidden="true">▼ pull</span>
+              </span>
+            </span>
+            <span class="spot-tag">Pull down to chat</span>
+          </button>
+
+          <!-- Service bell: rings when a message comes in -->
+          <button class="spot spot-bell" id="bell" type="button" aria-label="New messages — open the chat">
+            <span class="ring-waves" aria-hidden="true"><i></i><i></i></span>
+            <b id="bell-count" class="bell-count" hidden></b>
+          </button>
+
+          <!-- Stickers on the truck body -->
+          <span class="sticker lives-sticker"><span id="chances" class="chances"></span></span>
+          <span class="sticker streak-sticker"><span id="streak" class="streak" hidden></span></span>
+          <span class="closed-plank" aria-hidden="true">CLOSED</span>
+
         </div>
-        <ol id="board-list" class="board-list"></ol>
-        <p id="board-empty" class="muted small-text" hidden>No one else here yet — invite a friend!</p>
+      </div>
+      <p class="scene-hint" aria-hidden="true">Tap the calendar or the chalkboard · pull the door window down to chat</p>
+      <nav class="scene-dock" aria-label="Truck parts">
+        <button type="button" class="secondary small" data-open="cal">📅 Calendar</button>
+        <button type="button" class="secondary small" data-open="board">🏆 Board</button>
+        <button type="button" class="secondary small" data-open="chat">💬 Chat</button>
+      </nav>
+      <div id="status" class="sr-only"><span id="player-name"></span></div>
+
+      <!-- Close-ups: a truck part lifted off the picture so you can use it -->
+      <div class="closeup" id="closeup" hidden>
+        <div class="closeup-back" data-close></div>
+        <div class="closeup-item" data-item="cal" role="dialog" aria-label="Calendar" hidden>
+          <div class="hanger">
+            <span class="hook l" aria-hidden="true"></span><span class="hook r" aria-hidden="true"></span>
+            <div id="locked-banner" class="banner closed-sign" hidden>
+              <strong>CLOSED</strong> Your tracker is locked — you had sugar more than 3 times. You can still view your history.
+            </div>
+            <div class="card cal-card" id="cal-board">
+              <div class="rings" aria-hidden="true"></div>
+              <div class="cal-page" id="cal-page">
+                <div class="cal-nav">
+                  <button id="prev" class="secondary" aria-label="Previous month">‹</button>
+                  <h2 id="month-label"></h2>
+                  <button id="next" class="secondary" aria-label="Next month">›</button>
+                </div>
+                <table class="cal">
+                  <thead><tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr></thead>
+                  <tbody id="cal-body"></tbody>
+                </table>
+                <div class="legend">
+                  <span><i class="dot no"></i> No sugar</span>
+                  <span><i class="dot yes"></i> Sugar</span>
+                  <span><i class="dot open"></i> Not marked</span>
+                  <span>⏳ Today unlocks tomorrow</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="closeup-item" data-item="board" role="dialog" aria-label="Leaderboard" hidden>
+          <div class="card board">
+            <div class="board-head">
+              <h2>How everyone's doing</h2>
+              <span class="muted small-text">🔥 streak · ✅ clean days</span>
+            </div>
+            <ol id="board-list" class="board-list"></ol>
+            <p id="board-empty" class="muted small-text" hidden>No one else here yet — invite a friend!</p>
+          </div>
+        </div>
+        <button type="button" class="closeup-close" data-close aria-label="Put it back">✕</button>
       </div>
     </section>
 
