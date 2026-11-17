@@ -84,7 +84,14 @@
         <button type="button" class="link back" data-go="landing">← Back</button>
         <h2>Welcome back</h2>
         <label>Email <input name="email" type="email" autocomplete="email" required /></label>
-        <label>Password <input name="password" type="password" autocomplete="current-password" required /></label>
+        <label>Password
+          <span class="pw-wrap">
+            <input name="password" type="password" autocomplete="current-password" required />
+            <button type="button" class="pw-eye" aria-label="Show password" aria-pressed="false" title="Show password">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path class="eye" d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle class="eye" cx="12" cy="12" r="3"/><path class="slash" d="M4 4l16 16"/></svg>
+            </button>
+          </span>
+        </label>
         <button type="submit" class="full">Sign in</button>
         <p class="msg" role="status"></p>
         <p class="switch muted">No account? It's invite only — ask Adarsh.</p>

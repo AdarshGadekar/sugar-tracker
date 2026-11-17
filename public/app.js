@@ -577,6 +577,17 @@ function changeMonth(dir) {
 
 // ---------- Wire up ----------
 $("signin-form").addEventListener("submit", signIn);
+
+// Show / hide the password while typing it
+document.querySelectorAll(".pw-eye").forEach((btn) => btn.addEventListener("click", () => {
+  const input = btn.parentElement.querySelector("input");
+  const show = input.type === "password";
+  input.type = show ? "text" : "password";
+  btn.setAttribute("aria-pressed", String(show));
+  btn.title = show ? "Hide password" : "Show password";
+  btn.setAttribute("aria-label", btn.title);
+  input.focus();
+}));
 $("verify-check").addEventListener("click", (e) => busy(e.currentTarget, "Checking…", () => checkConfirmed(true)));
 $("verify-resend").addEventListener("click", resend);
 document.querySelectorAll("[data-go]").forEach((b) =>

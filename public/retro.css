@@ -210,3 +210,15 @@
 [data-theme="retro"] .sdk-grid { border: 2.5px solid var(--ink); }
 [data-theme="retro"] .sdk-levels { background: var(--card-solid); border: 2px solid var(--ink); }
 [data-theme="retro"] .sdk-levels button.on { background: var(--yellow); color: #161412; box-shadow: none; }
+
+/* ---------- Show / hide password ---------- */
+.pw-wrap { position: relative; display: block; }
+.pw-wrap input { padding-right: 48px; }
+.pw-wrap .pw-eye, .pw-wrap .pw-eye:hover, .pw-wrap .pw-eye:active {
+  position: absolute; right: 6px; top: calc(50% + 3px); translate: 0 -50%; width: 36px; height: 36px; padding: 6px; margin: 0;
+  display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; box-shadow: none; transform: none;
+  color: var(--muted, #5f5850); cursor: pointer; }
+.pw-wrap .pw-eye:hover { color: var(--text); background: color-mix(in srgb, var(--yellow, #ffe23a) 35%, transparent); }
+.pw-eye svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pw-eye .slash { opacity: 0; }
+.pw-eye[aria-pressed="true"] .slash { opacity: 1; }
