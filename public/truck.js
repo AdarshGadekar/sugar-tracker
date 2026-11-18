@@ -23,6 +23,7 @@ export function mountTruck() {
   mirrorCalendar();
   mirrorBoard();
   mountSpecials();
+  mountTouch();
   startPanned();
 }
 
@@ -198,6 +199,65 @@ function mountSpecials() {
     showSpecial(specialAt + 1);
     if (!reduceMotion) replay($("menu-card"), "swap");
   });
+}
+
+// ---------- Touch the truck: a tiny suspension wobble + a haptic tick ----------
+// Only the truck reacts (not the sky or the street): img/truck-mask.png is white where the truck is.
+function mountTouch() {
+  const scene = $("truck");
+  if (!scene) return;
+  let mask = null;
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement("canvas");
+    c.width = img.width; c.height = img.height;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0);
+    mask = { w: c.width, h: c.height, d: ctx.getImageData(0, 0, c.width, c.height).data };
+  };
+  img.src = "img/truck-mask.png";
+
+  const onTruck = (e) => {
+    if (e.target.closest(".spot, .vendor, .dog, .crow, .sticker, .day-shutter")) return true;
+    if (!mask) return false;
+    const r = scene.getBoundingClientRect();
+    const x = Math.floor(((e.clientX - r.left) / r.width) * mask.w);
+    const y = Math.floor(((e.clientY - r.top) / r.height) * mask.h);
+    if (x < 0 || y < 0 || x >= mask.w || y >= mask.h) return false;
+    return mask.d[(y * mask.w + x) * 4] > 127;
+  };
+
+  // Phones only allow vibration from a finished tap (finger lifted), so the buzz goes on "click";
+  // the wobble starts right away on touch-down.
+  let touchedTruck = false;
+  scene.addEventListener("click", () => { if (touchedTruck) { touchedTruck = false; haptic(); } });
+  scene.addEventListener("pointerdown", (e) => {
+    touchedTruck = onTruck(e);
+    if (!touchedTruck || reduceMotion) return;
+    const r = scene.getBoundingClientRect();
+    const side = (e.clientX - r.left) / r.width - 0.5;          // touched left or right of centre
+    const layer = $("truck-layer") || scene;
+    layer.style.setProperty("--tilt", `${(side * 0.7).toFixed(3)}deg`);
+    replay(layer, "jolt");
+  });
+}
+
+// A short buzz. Android: the vibration API. iPhone Safari has no vibration API, but flipping a
+// native on/off switch gives a light tap (iOS 18+), so we keep a hidden one and flip it.
+let hapticSwitch = null;
+function haptic() {
+  if (typeof navigator.vibrate === "function" && /Android/i.test(navigator.userAgent)) { navigator.vibrate(12); return; }
+  if (!/iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
+  if (!hapticSwitch) {
+    hapticSwitch = document.createElement("label");
+    hapticSwitch.setAttribute("aria-hidden", "true");
+    hapticSwitch.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none";
+    const input = Object.assign(document.createElement("input"), { type: "checkbox", tabIndex: -1 });
+    input.setAttribute("switch", "");
+    hapticSwitch.append(input);
+    document.body.append(hapticSwitch);
+  }
+  hapticSwitch.click();
 }
 
 // ---------- Paper calendar on the truck mirrors the real one ----------

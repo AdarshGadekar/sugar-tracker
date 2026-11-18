@@ -118,64 +118,80 @@
     <section id="app-view" class="scene-view" hidden>
       <div class="scene-wrap" id="scene-wrap">
         <div class="scene" id="truck">
-          <img class="scene-art" src="img/truck-toon-1600.jpg"
-               srcset="img/truck-toon-1600.jpg 1600w, img/truck-toon.jpg 2752w"
-               sizes="(max-width: 700px) 1100px, 100vw" width="2752" height="1376"
-               alt="Your food truck, parked at night" />
-          <img class="scene-art scene-day" src="img/truck-toon-day-1600.jpg"
-               srcset="img/truck-toon-day-1600.jpg 1600w, img/truck-toon-day.jpg 2752w"
-               sizes="(max-width: 700px) 1100px, 100vw" width="2752" height="1376" loading="lazy"
-               alt="" aria-hidden="true" />
-          <span class="glow window-glow" aria-hidden="true"></span>
+          <!-- Still background: the same picture with the truck painted out (only seen in the
+               tiny gaps while the truck rocks) -->
+          <img class="scene-art scene-bg" src="img/truck-bg-1600.jpg"
+               srcset="img/truck-bg-1600.jpg 1600w, img/truck-bg.jpg 2752w"
+               sizes="(max-width: 700px) 1100px, 100vw" width="2752" height="1376" alt="" aria-hidden="true" />
+          <img class="scene-art scene-bg scene-day" src="img/truck-bg-day-1600.jpg"
+               srcset="img/truck-bg-day-1600.jpg 1600w, img/truck-bg-day.jpg 2752w"
+               sizes="(max-width: 700px) 1100px, 100vw" width="2752" height="1376" loading="lazy" alt="" aria-hidden="true" />
           <span class="glow moon" aria-hidden="true"></span>
-          <span class="glow lamp l1" aria-hidden="true"></span><span class="glow lamp l2" aria-hidden="true"></span>
-          <span class="smoke" aria-hidden="true"><i></i><i></i><i></i></span>
-          <!-- Daytime: the truck only serves at night, so the shutter is down -->
-          <span class="day-shutter" aria-hidden="true">
-            <span class="graffiti"><b>NO SPOILERS!</b><i>today's sugar story drops tomorrow</i><em>✗ no peeking</em></span>
-          </span>
+
+          <!-- The truck: the picture cut to the truck's outline, plus everything attached to it.
+               Only this layer rocks when you touch the truck. -->
+          <div class="truck-layer" id="truck-layer">
+            <img class="scene-art" src="img/truck-toon-1600.jpg"
+                 srcset="img/truck-toon-1600.jpg 1600w, img/truck-toon.jpg 2752w"
+                 sizes="(max-width: 700px) 1100px, 100vw" width="2752" height="1376"
+                 alt="Your food truck, parked at night" />
+            <img class="scene-art scene-day" src="img/truck-toon-day-1600.jpg"
+                 srcset="img/truck-toon-day-1600.jpg 1600w, img/truck-toon-day.jpg 2752w"
+                 sizes="(max-width: 700px) 1100px, 100vw" width="2752" height="1376" loading="lazy"
+                 alt="" aria-hidden="true" />
+            <span class="glow window-glow" aria-hidden="true"></span>
+            <span class="glow lamp l1" aria-hidden="true"></span><span class="glow lamp l2" aria-hidden="true"></span>
+            <!-- Daytime: the truck only serves at night, so the shutter is down -->
+            <span class="day-shutter" aria-hidden="true">
+              <span class="graffiti"><b>NO SPOILERS!</b><i>today's sugar story drops tomorrow</i><em>✗ no peeking</em></span>
+            </span>
+
+            <!-- Lives: app.js still renders hearts here for screen readers; the sticker shows them on the truck -->
+            <div id="hearts" class="balloons" aria-live="polite"></div>
+
+            <!-- Roof sign: tap for a no-added-sugar treat idea -->
+            <button class="spot spot-sign" id="spot-sign" type="button" data-open="special" aria-label="See today's no-sugar special">
+              <span class="spot-tag">Today's special ✨</span>
+            </button>
+
+            <!-- Paper calendar hanging off the awning -->
+            <button class="spot spot-cal" id="spot-cal" type="button" data-open="cal" aria-label="Open your calendar">
+              <span class="paper" id="mini-cal">
+                <span class="paper-head" id="mini-month"></span>
+                <span class="paper-grid" id="mini-days"></span>
+              </span>
+              <span class="spot-tag">Calendar</span>
+            </button>
+
+            <!-- Chalkboard next to the serving window -->
+            <button class="spot spot-board" id="spot-board" type="button" data-open="board" aria-label="Open the leaderboard">
+              <span class="chalk">
+                <span class="chalk-title">How everyone's doing</span>
+                <span class="chalk-rows" id="mini-board"></span>
+              </span>
+              <span class="spot-tag">Leaderboard</span>
+            </button>
+
+            <!-- Service bell: rings when a message comes in -->
+            <button class="spot spot-bell" id="bell" type="button" aria-label="New messages — open the chat">
+              <span class="ring-waves" aria-hidden="true"><i></i><i></i></span>
+              <b id="bell-count" class="bell-count" hidden></b>
+            </button>
+
+            <!-- Stickers on the truck body -->
+            <span class="sticker lives-sticker"><span id="chances" class="chances"></span></span>
+            <span class="sticker streak-sticker"><span id="streak" class="streak" hidden></span></span>
+            <span class="closed-plank" aria-hidden="true">CLOSED</span>
+          </div>
+          <!-- The stool stands on the street, not on the truck: a still copy of it sits on top -->
+          <img class="scene-art stool-art" src="img/truck-toon-1600.jpg" alt="" aria-hidden="true" />
+          <img class="scene-art stool-art scene-day" src="img/truck-toon-day-1600.jpg" loading="lazy" alt="" aria-hidden="true" />
           <span class="twinkle" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="smoke" aria-hidden="true"><i></i><i></i><i></i></span>
 
-          <!-- Lives: app.js still renders hearts here for screen readers; the sticker shows them on the truck -->
-          <div id="hearts" class="balloons" aria-live="polite"></div>
-
-          <!-- Roof sign: tap for a no-added-sugar treat idea -->
-          <button class="spot spot-sign" id="spot-sign" type="button" data-open="special" aria-label="See today's no-sugar special">
-            <span class="spot-tag">Today's special ✨</span>
-          </button>
-
-          <!-- Paper calendar hanging off the awning -->
-          <button class="spot spot-cal" id="spot-cal" type="button" data-open="cal" aria-label="Open your calendar">
-            <span class="paper" id="mini-cal">
-              <span class="paper-head" id="mini-month"></span>
-              <span class="paper-grid" id="mini-days"></span>
-            </span>
-            <span class="spot-tag">Calendar</span>
-          </button>
-
-          <!-- Chalkboard next to the serving window -->
-          <button class="spot spot-board" id="spot-board" type="button" data-open="board" aria-label="Open the leaderboard">
-            <span class="chalk">
-              <span class="chalk-title">How everyone's doing</span>
-              <span class="chalk-rows" id="mini-board"></span>
-            </span>
-            <span class="spot-tag">Leaderboard</span>
-          </button>
-
-          <!-- Service bell: rings when a message comes in -->
-          <button class="spot spot-bell" id="bell" type="button" aria-label="New messages — open the chat">
-            <span class="ring-waves" aria-hidden="true"><i></i><i></i></span>
-            <b id="bell-count" class="bell-count" hidden></b>
-          </button>
-
-          <!-- Stickers on the truck body -->
-          <span class="sticker lives-sticker"><span id="chances" class="chances"></span></span>
-          <span class="sticker streak-sticker"><span id="streak" class="streak" hidden></span></span>
-          <span class="closed-plank" aria-hidden="true">CLOSED</span>
-
+          <span class="art-credit">Art generated with Gemini AI</span>
         </div>
       </div>
-      <p class="scene-hint" aria-hidden="true">Tap the calendar, the chalkboard or the sign · talk to the vendor to chat</p>
       <nav class="scene-dock" aria-label="Truck parts">
         <button type="button" class="secondary small" data-open="cal">📅 Calendar</button>
         <button type="button" class="secondary small" data-open="board">🏆 Board</button>

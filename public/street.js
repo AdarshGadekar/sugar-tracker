@@ -48,16 +48,19 @@ function vendorNight() {
   </svg>`;
 }
 
-/** Day: shutter's down, he's standing by the truck reading the paper. 230×510. */
+/** Day: shutter's down, he's sitting on the stool reading the paper. 240×460 = picture pixels;
+ *  the seat of the painted stool is at y=300. */
 function vendorDay() {
-  return `<svg viewBox="0 0 230 510" aria-hidden="true">
-    <path d="M86 330 L80 470 L108 470 L114 340 Z M144 330 L150 470 L122 470 L116 340 Z" fill="#2f3b63" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>
-    <ellipse cx="88" cy="482" rx="26" ry="12" fill="#6b3f1f" stroke="${INK}" stroke-width="3"/>
-    <ellipse cx="144" cy="482" rx="26" ry="12" fill="#6b3f1f" stroke="${INK}" stroke-width="3"/>
-    <path d="M58 340 C56 250 74 214 115 214 C156 214 174 250 172 340 Z" fill="#1f8f84" stroke="${INK}" stroke-width="3.5"/>
-    <rect x="103" y="170" width="24" height="30" fill="${SKIN}" stroke="${INK}" stroke-width="3"/>
-    ${head(115, 140)}
-    <g class="v-paper">
+  return `<svg viewBox="0 0 240 460" aria-hidden="true">
+    <path d="M76 318 L72 432 L102 432 L106 318 Z M164 318 L168 432 L138 432 L134 318 Z" fill="#2f3b63" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>
+    <ellipse cx="80" cy="440" rx="26" ry="11" fill="#6b3f1f" stroke="${INK}" stroke-width="3"/>
+    <ellipse cx="160" cy="440" rx="26" ry="11" fill="#6b3f1f" stroke="${INK}" stroke-width="3"/>
+    <path d="M60 300 C58 200 76 150 120 150 C164 150 182 200 180 300 Z" fill="#1f8f84" stroke="${INK}" stroke-width="3.5"/>
+    <rect x="62" y="282" width="56" height="44" rx="20" fill="#2f3b63" stroke="${INK}" stroke-width="3.5"/>
+    <rect x="122" y="282" width="56" height="44" rx="20" fill="#2f3b63" stroke="${INK}" stroke-width="3.5"/>
+    <rect x="108" y="120" width="24" height="34" fill="${SKIN}" stroke="${INK}" stroke-width="3"/>
+    ${head(120, 92)}
+    <g class="v-paper"><g transform="translate(5 -48)">
       <g transform="rotate(-4 115 250)">
         <rect x="12" y="160" width="206" height="176" rx="3" fill="#f4f0e4" stroke="${INK}" stroke-width="3.5"/>
         <path d="M115 162 V334" stroke="#cfc8b6" stroke-width="2"/>
@@ -75,10 +78,10 @@ function vendorDay() {
         <text x="164" y="248" font-size="15" font-family="Baloo 2, sans-serif" fill="${INK}">9</text>
         <rect x="128" y="266" width="78" height="4" fill="#9a927f"/><rect x="128" y="276" width="70" height="4" fill="#9a927f"/>
         <rect x="128" y="286" width="78" height="4" fill="#9a927f"/><rect x="128" y="296" width="62" height="4" fill="#9a927f"/>
-      </g>
+      </g></g>
       <circle cx="16" cy="244" r="13" fill="${SKIN}" stroke="${INK}" stroke-width="3"/>
       <circle cx="214" cy="232" r="13" fill="${SKIN}" stroke="${INK}" stroke-width="3"/>
-    </g>
+    </g></g>
   </svg>`;
 }
 
@@ -118,15 +121,18 @@ function crow() {
 
 /** Put the street life on the scene. Returns the elements the truck code wires up. */
 export function buildStreet(scene) {
-  const html = `
-    <img class="city-lights" src="img/city-lights.png" alt="" aria-hidden="true" />
+  const layer = scene.querySelector(".truck-layer") || scene;
+  // on the truck (rocks with it): the vendor in the window, the crow on the roof sign
+  layer.insertAdjacentHTML("beforeend", `
     <button class="spot vendor vendor-night" type="button" aria-label="Talk to the vendor — open the chat">${vendorNight()}</button>
+    <button class="crow" type="button" tabindex="-1" aria-hidden="true">${crow()}</button>`);
+  // on the street (stays still): the vendor on his stool in the day, his bubble, the dog
+  scene.insertAdjacentHTML("beforeend", `
     <button class="spot vendor vendor-day" type="button" aria-label="Talk to the vendor — open the chat">${vendorDay()}</button>
     <span class="vendor-bubble" aria-hidden="true"></span>
+    <img class="city-lights" src="img/city-lights.png" alt="" aria-hidden="true" />
     <span class="walker" aria-hidden="true"><button class="dog" type="button" tabindex="-1">${dog()}</button></span>
-    <button class="crow" type="button" tabindex="-1" aria-hidden="true">${crow()}</button>
-    <span class="critter-bubble" aria-hidden="true"></span>`;
-  scene.insertAdjacentHTML("beforeend", html);
+    <span class="critter-bubble" aria-hidden="true"></span>`);
   return {
     vendors: [...scene.querySelectorAll(".vendor")],
     bubble: scene.querySelector(".vendor-bubble"),
