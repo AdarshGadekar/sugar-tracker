@@ -135,8 +135,9 @@ function mountVendor() {
   const sync = () => {
     const open = !panel.hidden;
     st.vendors.forEach((v) => v.setAttribute("aria-expanded", String(open)));
-    if (open) { closeCloseup(); popFrom(current(), panel); }
+    if (open) { closeCloseup(); placeBubble(panel, current()); popFrom(current(), panel); }
   };
+  addEventListener("resize", () => { if (!panel.hidden) placeBubble(panel, current()); });
   new MutationObserver(sync).observe(panel, { attributes: true, attributeFilter: ["hidden"] });
 
   // the bell rings for new messages (chat.js pings #chat-toggle); tap it to open the chat too
@@ -174,6 +175,22 @@ function mountVendor() {
     st.crow.classList.add("gone");
     setTimeout(() => st.crow.classList.remove("gone"), 25000);   // it comes back
   });
+}
+
+/** Put the chat bubble right beside the vendor, tail pointing at his head. */
+function placeBubble(panel, who) {
+  panel.classList.remove("tail-left", "tail-right");
+  if (!who || innerWidth <= 600) { panel.style.left = panel.style.top = ""; return; }
+  const v = who.getBoundingClientRect();
+  const w = panel.offsetWidth, h = panel.offsetHeight, gap = 26, pad = 12;
+  const headY = v.top + v.height * 0.28;
+  const right = v.right + gap + w <= innerWidth - pad;          // room on his right? (else open on his left)
+  const left = right ? v.right + gap : Math.max(pad, v.left - gap - w);
+  const top = Math.min(Math.max(76, headY - h * 0.35), innerHeight - h - pad);
+  panel.style.left = `${Math.round(left)}px`;
+  panel.style.top = `${Math.round(top)}px`;
+  panel.style.setProperty("--tail-y", `${Math.round(Math.min(Math.max(headY - top, 30), h - 30))}px`);
+  panel.classList.add(right ? "tail-left" : "tail-right");
 }
 
 /** The chat panel grows out of whatever opened it (the vendor). */
