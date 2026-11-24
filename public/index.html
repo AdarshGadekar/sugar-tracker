@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="retro.css" />
   <link rel="stylesheet" href="truck.css" />
+  <link rel="stylesheet" href="planner.css" />
   <script src="mode.js"></script>
 </head>
 <body>
@@ -178,6 +179,14 @@
               <b id="bell-count" class="bell-count" hidden></b>
             </button>
 
+            <!-- Order-ticket clipboard on the cab door = your day planner -->
+            <button class="spot spot-plan" id="spot-plan" type="button" data-open="plan" aria-label="Open your day planner">
+              <span class="clip-board"><span class="clip" aria-hidden="true"></span>
+                <span class="ticket"><span class="tk-head">TODAY'S ORDERS</span><span class="tk-body" id="mini-plan"></span></span>
+              </span>
+              <span class="spot-tag">Day planner</span>
+            </button>
+
             <!-- Stickers on the truck body -->
             <span class="sticker lives-sticker"><span id="chances" class="chances"></span></span>
             <span class="sticker streak-sticker"><span id="streak" class="streak" hidden></span></span>
@@ -194,6 +203,7 @@
       <nav class="scene-dock" aria-label="Truck parts">
         <button type="button" class="secondary small" data-open="cal">📅 Calendar</button>
         <button type="button" class="secondary small" data-open="board">🏆 Board</button>
+        <button type="button" class="secondary small" data-open="plan">🗓️ Plan</button>
         <button type="button" class="secondary small" data-open="chat">💬 Chat</button>
       </nav>
       <div id="status" class="sr-only"><span id="player-name"></span></div>
@@ -251,6 +261,55 @@
               <button type="button" class="secondary" id="special-next">Another one 🔄</button>
             </div>
           </article>
+        </div>
+        <div class="closeup-item" data-item="plan" role="dialog" aria-label="Day planner" hidden>
+          <section class="planner" id="planner">
+            <header class="pl-head">
+              <button type="button" id="pl-prev" class="secondary pl-nav" aria-label="Previous day">‹</button>
+              <div class="pl-title"><h2 id="pl-day">Today</h2><span id="pl-date" class="pl-date"></span></div>
+              <button type="button" id="pl-next" class="secondary pl-nav" aria-label="Next day">›</button>
+              <button type="button" id="pl-today" class="secondary small pl-today" hidden>Today</button>
+            </header>
+            <div class="pl-bar" id="pl-bar" aria-hidden="true"></div>
+            <div class="pl-totals" id="pl-totals"></div>
+            <p class="pl-error" id="pl-error" role="alert" hidden></p>
+            <p class="pl-empty" id="pl-empty">Nothing planned yet. Drag on the timeline, tap a free slot, or hit <b>+ Add</b>.</p>
+            <div class="pl-scroll" id="pl-scroll">
+              <div class="pl-timeline" id="pl-timeline"></div>
+            </div>
+            <button type="button" class="pl-add" id="pl-add">+ Add</button>
+
+            <form class="pl-form" id="pl-form" hidden>
+              <h3 id="pl-form-title">New block</h3>
+              <label>What <input name="title" maxlength="120" placeholder="e.g. Gym, deep work, call mom" autocomplete="off" required /></label>
+              <div class="pl-times">
+                <label>From <input name="start" type="time" step="60" required /></label>
+                <label>To <input name="end" type="time" step="60" required /></label>
+              </div>
+              <div class="pl-lens" aria-label="Quick length">
+                <button type="button" class="secondary small" data-len="15">15m</button>
+                <button type="button" class="secondary small" data-len="30">30m</button>
+                <button type="button" class="secondary small" data-len="60">1h</button>
+                <button type="button" class="secondary small" data-len="90">1½h</button>
+                <button type="button" class="secondary small" data-len="120">2h</button>
+              </div>
+              <fieldset class="pl-tags"><legend>Tag</legend>
+                <label class="tag-work"><input type="radio" name="tag" value="work" />💼 Work</label>
+                <label class="tag-health"><input type="radio" name="tag" value="health" />🏃 Health</label>
+                <label class="tag-me"><input type="radio" name="tag" value="me" />🌿 Me</label>
+                <label class="tag-learn"><input type="radio" name="tag" value="learn" />📚 Learn</label>
+                <label class="tag-other"><input type="radio" name="tag" value="other" />📝 Other</label>
+              </fieldset>
+              <label>Notes / to-do <textarea name="notes" rows="3" maxlength="2000" placeholder="Anything to remember…"></textarea></label>
+              <label class="pl-check"><input type="checkbox" name="done" /> Done</label>
+              <p class="pl-msg" id="pl-msg" role="status"></p>
+              <div class="pl-actions">
+                <button type="button" class="link pl-delete" id="pl-delete">Delete</button>
+                <button type="button" class="secondary" id="pl-cancel">Cancel</button>
+                <button type="submit">Save</button>
+              </div>
+            </form>
+          </section>
         </div>
         <button type="button" class="closeup-close" data-close aria-label="Put it back">✕</button>
       </div>

@@ -134,7 +134,66 @@ export function createMockClient() {
     return q;
   }
 
+  // ---------- day planner (time_blocks), same rules as supabase/timetable.sql ----------
+  function blocksApi() {
+    const mine = () => (db.blocks ||= []).filter((b) => b.user_id === currentId());
+    const check = (b) => {
+      if (!currentId()) return err("42501", "permission denied");
+      const t = String(b.title ?? "").trim();
+      if (!t || t.length > 120) return err("23514", "title check failed");
+      if (!(b.start_min >= 0 && b.start_min <= 1439 && b.end_min >= 1 && b.end_min <= 1440 && b.end_min > b.start_min)) {
+        return err("23514", "time check failed");
+      }
+      if (String(b.notes ?? "").length > 2000) return err("23514", "notes check failed");
+      return null;
+    };
+    const one = (run) => { const p = (async () => { await wait(150); return run(); })();
+      const c = { select: () => c, single: () => p, then: (a, b) => p.then(a, b) }; return c; };
+    return {
+      select() {
+        const f = {};
+        const q = { eq: (col, v) => { f[col] = v; return q; }, order: () => q,
+          then: (ok, bad) => wait(200).then(() => {
+            if (!currentId()) return { data: null, error: err("42501", "permission denied") };
+            const rows = mine().filter((b) => Object.entries(f).every(([k, v]) => b[k] === v))
+              .sort((a, b) => a.start_min - b.start_min);
+            return { data: rows.map((r) => ({ ...r })), error: null };
+          }).then(ok, bad) };
+        return q;
+      },
+      insert(row) {
+        return one(() => {
+          const b = { id: crypto.randomUUID(), user_id: currentId(), notes: "", tag: "other", done: false, ...row,
+            created_at: new Date().toISOString() };
+          const e = check(b); if (e) return { data: null, error: e };
+          db.blocks.push(b); save(db);
+          return { data: { ...b }, error: null };
+        });
+      },
+      update(patch) {
+        return { eq: (_col, id) => one(() => {
+          const b = mine().find((x) => x.id === id);
+          if (!b) return { data: null, error: err("PGRST116", "not found") };
+          const next = { ...b, ...patch };
+          const e = check(next); if (e) return { data: null, error: e };
+          Object.assign(b, patch); save(db);
+          return { data: { ...b }, error: null };
+        }) };
+      },
+      delete() {
+        return { async eq(_col, id) {
+          await wait(150);
+          const before = (db.blocks || []).length;
+          db.blocks = (db.blocks || []).filter((x) => !(x.id === id && x.user_id === currentId()));
+          save(db);
+          return { error: before === db.blocks.length ? err("42501", "permission denied") : null };
+        } };
+      },
+    };
+  }
+
   function from(table) {
+    if (table === "time_blocks") return blocksApi();
     if (table === "messages") {
       return {
         select: () => query((q) => {

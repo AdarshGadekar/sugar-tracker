@@ -7,6 +7,7 @@ import { CLEAN, SLIP, LAST_LIFE, GAME_OVER, TODAY_LINES, FUTURE_LINES, pick } fr
 import { createChat } from "./chat.js";
 import { mountDiwali, celebrate } from "./diwali.js";
 import { mountTruck, stampDay, flipBoard } from "./truck.js";
+import { mountPlanner } from "./planner.js";
 
 mountSudoku(document.getElementById("sudoku"));
 mountDiwali();
@@ -54,6 +55,7 @@ if (useMock) {
 
 const chat = createChat({ supabase, $, replay });
 mountTruck();
+const planner = mountPlanner({ supabase, toast: (m, bad) => toast(m, bad) });
 
 const state = {
   user: null,
@@ -270,8 +272,10 @@ function showView() {
     replay($("app-view"));
     loadMarks({ animate: true });
     chat.start(state.user);
+    planner.start(state.user);
   } else {
     chat.stop();
+    planner.stop();
     if (!pending) showScreen("landing");
   }
 }
